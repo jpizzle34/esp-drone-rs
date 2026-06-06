@@ -19,11 +19,19 @@ Optional: **D27** status LED (same as Phase 0) — blinks once before the test a
 
 See [wokwi-simulation.md](./wokwi-simulation.md) to run the same test in the **Wokwi simulator** first (no hardware).
 
+From `Firmware/esp-drone-rs/` (scripts load the ESP environment automatically):
+
 ```bash
-source ~/export-esp.sh
 cd Firmware/esp-drone-rs
-cargo build
-espflash flash --monitor target/xtensa-esp32-espidf/debug/esp-drone-rs
+./scripts/flash.sh debug      # debug build + flash + serial monitor
+./scripts/flash.sh            # release (default)
+```
+
+Or with `cargo` directly (requires `source ~/export-esp.sh` first):
+
+```bash
+cargo run              # debug
+cargo run --release    # release
 ```
 
 ## Expected behaviour

@@ -6,12 +6,12 @@ firmware = "target/xtensa-esp32-espidf/debug/esp-drone-rs"
 
 [[chip]]
 name = "mosfet-n"
-binary = "mosfet-n.chip.wasm"
+binary = "chips/mosfet-n.chip.wasm"
 
 [[chip]]
 name = "dc-motor"
-binary = "dc-motor.chip.wasm"
+binary = "chips/dc-motor.chip.wasm"
 
 [[chip]]
 name = "diode"
-binary = "chip-diode.chip.wasm"
+binary = "chips/chip-diode.chip.wasm"

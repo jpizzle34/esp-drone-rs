@@ -1,4 +1,16 @@
-/.embuild
-/target
-/Cargo.lock
-/wokwi-api.h
+# ESP-IDF / embuild cache (downloaded toolchains and ESP-IDF sources)
+/.embuild/
+
+# Rust build output
+/target/
+
+# ESP-IDF generated configuration (defaults in sdkconfig.defaults are tracked)
+/sdkconfig
+/sdkconfig.old
+
+# Wokwi chip compile header (generated/copied locally)
+wokwi-api.h
+chips/wokwi-api.h
+
+# Rust backup files
+**/*.rs.bk

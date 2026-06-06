@@ -3,7 +3,7 @@
     "rust-analyzer": {
       "initialization_options": {
         "linkedProjects": [
-          "/home/johnny/projects/Co-Create_ESP-FLY/Firmware/esp-drone-rs/Cargo.toml"
+          "Firmware/esp-drone-rs/Cargo.toml"
         ],
         "cargo": {
           "target": "xtensa-esp32-espidf",

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Build, flash, and monitor on hardware (ESP32 + Rust ESP-IDF).
-# Uses `cargo run` so flashing goes through the runner in .cargo/config.toml.
+# Compile firmware only (ESP32 + Rust ESP-IDF).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -11,10 +10,10 @@ which idf.py >/dev/null || {
 
 case "${1:-}" in
 "" | "release")
-    cargo run --release
+    cargo build --release
     ;;
 "debug")
-    cargo run
+    cargo build
     ;;
 *)
     echo 'Wrong argument. Only "debug" or "release" are supported'

@@ -27,13 +27,11 @@ build_chip() {
   fi
 }
 
-build_chip mosfet-n.chip.c mosfet-n.chip.wasm || true
-build_chip dc-motor.chip.c dc-motor.chip.wasm || true
-build_chip chip-diode.chip.c chip-diode.chip.wasm || true
+build_chip chips/mosfet-n.chip.c chips/mosfet-n.chip.wasm || true
+build_chip chips/dc-motor.chip.c chips/dc-motor.chip.wasm || true
+build_chip chips/chip-diode.chip.c chips/chip-diode.chip.wasm || true
 
-# shellcheck disable=SC1091
-source "${HOME}/export-esp.sh"
-cargo build
+bash scripts/build.sh debug
 echo ""
 echo "Wokwi: open this folder in VS Code, then run 'Wokwi: Start Simulator'"
 echo "  ELF: target/xtensa-esp32-espidf/debug/esp-drone-rs"

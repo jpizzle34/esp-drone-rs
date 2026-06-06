@@ -25,6 +25,5 @@ esp-idf-svc = { version = "0.52.1", features = ["critical-section"] }
 [build-dependencies]
 embuild = "0.33"
 
-# esp-idf-sys resolves sdkconfig.defaults relative to the workspace root, not this crate.
 [package.metadata.esp-idf-sys]
-esp_idf_sdkconfig_defaults = ["Firmware/esp-drone-rs/sdkconfig.defaults"]
+esp_idf_sdkconfig_defaults = ["sdkconfig.defaults"]

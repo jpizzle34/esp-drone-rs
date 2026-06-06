@@ -4,19 +4,19 @@
     {
       "label": "Build firmware (release)",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/build.sh",
+      "command": "${workspaceFolder}/Firmware/esp-drone-rs/scripts/build.sh",
       "problemMatcher": ["$rustc"]
     },
     {
       "label": "Build firmware (debug)",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/build.sh debug",
+      "command": "${workspaceFolder}/Firmware/esp-drone-rs/scripts/build.sh debug",
       "problemMatcher": ["$rustc"]
     },
     {
       "label": "Flash firmware (release)",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/flash.sh",
+      "command": "${workspaceFolder}/Firmware/esp-drone-rs/scripts/flash.sh",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -26,13 +26,13 @@
     {
       "label": "Flash firmware (debug)",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/flash.sh debug",
+      "command": "${workspaceFolder}/Firmware/esp-drone-rs/scripts/flash.sh debug",
       "problemMatcher": ["$rustc"]
     },
     {
       "label": "Build for Wokwi",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/build-for-wokwi.sh",
+      "command": "${workspaceFolder}/Firmware/esp-drone-rs/scripts/build-for-wokwi.sh",
       "problemMatcher": ["$rustc"]
     }
   ]

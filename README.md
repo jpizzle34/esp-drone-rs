@@ -24,14 +24,20 @@ No drone frame or motors are required to **build** the project. You can run the 
 
 ```
 Co-Create_ESP-FLY/          ← clone the repo here (any folder name is fine)
-├── .cargo/config.toml      ← ESP32 target, espflash runner, ESP-IDF version
-├── rust-toolchain.toml     ← pins the `esp` Rust toolchain
-├── Cargo.toml              ← workspace root
 ├── Firmware/
-│   ├── esp-drone-rs/       ← **Rust firmware you build and flash**
+│   ├── esp-drone-rs/       ← **Rust firmware — build and flash from here**
+│   │   ├── .cargo/config.toml
+│   │   ├── rust-toolchain.toml
+│   │   ├── Cargo.toml
+│   │   ├── chips/          ← Wokwi custom chips (.chip.c/.json/.wasm)
+│   │   ├── target/         ← build output (after first build)
+│   │   ├── .embuild/       ← ESP-IDF cache (after first build)
+│   │   └── scripts/        ← build.sh, flash.sh, build-for-wokwi.sh
 │   └── esp-drone/          ← legacy C firmware (reference)
 └── docs/hardware/          ← pinout, wiring, Wokwi, flash-test docs
 ```
+
+All Rust tooling (`target/`, `.embuild/`, `Cargo.lock`) lives inside `Firmware/esp-drone-rs/`.
 
 ---
 
@@ -41,14 +47,14 @@ Co-Create_ESP-FLY/          ← clone the repo here (any folder name is fine)
 
 ```bash
 git clone https://github.com/jpizzle34/esp-drone-rs.git
-cd esp-drone-rs
+cd esp-drone-rs/Firmware/esp-drone-rs
 ```
 
 If you use SSH:
 
 ```bash
 git clone git@github.com:jpizzle34/esp-drone-rs.git
-cd esp-drone-rs
+cd esp-drone-rs/Firmware/esp-drone-rs
 ```
 
 ### 2. Install system packages (Linux / WSL2)
@@ -92,33 +98,32 @@ cargo --version
 cargo install espup espflash ldproxy
 ```
 
-Then install the ESP32 Rust toolchain and ESP-IDF (this downloads several hundred MB and may take several minutes):
+Then install the ESP32 Rust toolchain (this downloads several hundred MB and may take several minutes):
 
 ```bash
 espup install
 ```
 
-Load the environment **in every new terminal** before building:
+That creates `~/export-esp.sh`, which sets `LIBCLANG_PATH` and adds the Xtensa GCC linker to `PATH`. You need those variables in your shell before Cargo can build or link.
+
+**You do not need to run `source` manually if you use the helper scripts** — `build.sh`, `flash.sh`, and `build-for-wokwi.sh` source `~/export-esp.sh` automatically when the ESP environment is not already loaded.
+
+If you prefer running `cargo` directly:
 
 ```bash
-source ~/export-esp.sh
+source ~/export-esp.sh   # once per terminal session
 ```
 
-You should see `PATH` and `LIBCLANG_PATH` updated. If `~/export-esp.sh` is missing, re-run `espup install`.
+Or add it to `~/.bashrc` / `~/.zshrc` so every new terminal is ready.
 
-**Tip:** add this to your `~/.bashrc` or `~/.zshrc` so you do not forget:
-
-```bash
-source ~/export-esp.sh
-```
+If `~/export-esp.sh` is missing, re-run `espup install`.
 
 ### 5. First build
 
-From the **repository root** (not `Firmware/esp-drone-rs/`):
+From **`Firmware/esp-drone-rs/`**:
 
 ```bash
-source ~/export-esp.sh
-cargo build
+./scripts/build.sh
 ```
 
 The first build is slow (often **15–30+ minutes**): it downloads ESP-IDF **v5.5.3** into `.embuild/` and compiles it. Later builds are much faster.
@@ -126,10 +131,24 @@ The first build is slow (often **15–30+ minutes**): it downloads ESP-IDF **v5.
 On success you will have:
 
 ```
-target/xtensa-esp32-espidf/debug/esp-drone-rs
+target/xtensa-esp32-espidf/release/esp-drone-rs
 ```
 
-That ELF is the firmware binary.
+That ELF is the firmware binary. `./scripts/build.sh` defaults to **release**; use `./scripts/build.sh debug` for a debug build.
+
+### Helper scripts
+
+All scripts live in `Firmware/esp-drone-rs/scripts/` and `cd` to the crate root automatically. They source `~/export-esp.sh` when needed.
+
+| Script | Command | What it does |
+| ------ | ------- | ------------ |
+| `build.sh` | `./scripts/build.sh` | `cargo build --release` (compile only) |
+| `build.sh` | `./scripts/build.sh debug` | `cargo build` (debug, compile only) |
+| `flash.sh` | `./scripts/flash.sh` | `cargo run --release` (build + flash + monitor) |
+| `flash.sh` | `./scripts/flash.sh debug` | `cargo run` (debug, build + flash + monitor) |
+| `build-for-wokwi.sh` | `./scripts/build-for-wokwi.sh` | Debug build + compile custom Wokwi chips |
+
+`flash.sh` delegates to `cargo run`. Flashing uses the `espflash` runner configured in [`.cargo/config.toml`](Firmware/esp-drone-rs/.cargo/config.toml).
 
 ---
 
@@ -142,7 +161,6 @@ Good first step if you do not have a board yet.
 3. Build from a terminal:
 
     ```bash
-    source ~/export-esp.sh
     cd Firmware/esp-drone-rs
     ./scripts/build-for-wokwi.sh
     ```
@@ -174,21 +192,18 @@ ls /dev/ttyUSB* /dev/ttyACM* 2>/dev/null
 
 ### Build, flash, and monitor
 
-From the repo root:
+From **`Firmware/esp-drone-rs/`** (no manual `source` required):
 
 ```bash
-source ~/export-esp.sh
-cargo run
+./scripts/flash.sh          # release — build + flash + serial monitor
+./scripts/flash.sh debug      # debug
 ```
 
-`cargo run` builds, flashes via [espflash](https://github.com/esp-rs/espflash), and opens the serial monitor (115200 baud) — configured in [`.cargo/config.toml`](.cargo/config.toml).
-
-Or use the helper script from the firmware crate:
+Equivalent using `cargo` directly (requires `source ~/export-esp.sh` first, or ESP env in your shell profile):
 
 ```bash
-source ~/export-esp.sh
-cd Firmware/esp-drone-rs
-./scripts/flash.sh
+cargo run --release
+cargo run
 ```
 
 ### Expected output
@@ -212,32 +227,37 @@ Press **Ctrl+C** to exit the monitor. Press **RST** on the board to run the boot
 
 ## Daily workflow
 
-Every new terminal session:
+Work from `Firmware/esp-drone-rs/`:
 
 ```bash
-cd esp-drone-rs          # your clone path
-source ~/export-esp.sh
-cargo build              # compile only
-cargo run                # build + flash + monitor (hardware)
-```
+cd Firmware/esp-drone-rs
 
-Release build (smaller/faster on device):
+# Recommended — scripts load the ESP env automatically
+./scripts/build.sh            # compile only (release)
+./scripts/build.sh debug      # compile only (debug)
+./scripts/flash.sh            # build + flash + monitor (release)
+./scripts/flash.sh debug      # build + flash + monitor (debug)
 
-```bash
+# Or, if ~/export-esp.sh is already sourced in this shell:
 cargo build --release
-espflash flash --monitor target/xtensa-esp32-espidf/release/esp-drone-rs
+cargo run --release
 ```
 
 ---
 
 ## VS Code setup (optional)
 
-Open the **repository root** for Rust-analyzer on the workspace. Recommended extensions (see `Firmware/esp-drone-rs/.vscode/extensions.json`):
+You can open either folder:
+
+| Folder opened | rust-analyzer | Build tasks (Ctrl+Shift+B) |
+| ------------- | ------------- | -------------------------- |
+| **Repo root** (`Co-Create_ESP-FLY/`) | via `linkedProjects` in [`.vscode/settings.json`](.vscode/settings.json) | Flash / Build / Wokwi tasks in [`.vscode/tasks.json`](.vscode/tasks.json) |
+| **`Firmware/esp-drone-rs/`** | auto-discovers `Cargo.toml` | tasks in [`Firmware/esp-drone-rs/.vscode/tasks.json`](Firmware/esp-drone-rs/.vscode/tasks.json) |
+
+Recommended extensions (see `Firmware/esp-drone-rs/.vscode/extensions.json`):
 
 - **rust-analyzer**
-- **Wokwi for VS Code** (simulation)
-
-Rust-analyzer settings for the ESP target are already in `Firmware/esp-drone-rs/.vscode/settings.json`.
+- **Wokwi for VS Code** (simulation — open `Firmware/esp-drone-rs` for Wokwi)
 
 ---
 
@@ -245,8 +265,9 @@ Rust-analyzer settings for the ESP target are already in `Firmware/esp-drone-rs/
 
 | Problem                                | What to try                                                                                                  |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `~/export-esp.sh` not found            | Run `espup install`, then `source ~/export-esp.sh`                                                           |
-| `xtensa-esp32-espidf` target not found | Run `espup install`; ensure you sourced `export-esp.sh`                                                      |
+| `~/export-esp.sh` not found            | Run `espup install`; then use `./scripts/build.sh` or `source ~/export-esp.sh`                             |
+| `xtensa-esp32-espidf` target not found | Run `espup install`; use helper scripts or `source ~/export-esp.sh` before `cargo`                         |
+| `LIBCLANG_PATH` / linker errors        | ESP env not loaded — use `./scripts/flash.sh` or `source ~/export-esp.sh`                                  |
 | Build fails on `cmake` / `ninja`       | Install system packages from step 2                                                                          |
 | First build very slow                  | Normal — ESP-IDF is compiling; wait for it to finish                                                         |
 | `Permission denied` on `/dev/ttyUSB0`  | Add user to `dialout` group (see Option B)                                                                   |
@@ -290,7 +311,7 @@ This project is licensed under **GPL-3.0** — see [LICENSE](LICENSE). Firmware 
 ## Contributing
 
 1. Fork and clone the repo.
-2. Follow the setup steps above until `cargo build` succeeds.
+2. Follow the setup steps above until `./scripts/build.sh` succeeds.
 3. Make changes in `Firmware/esp-drone-rs/`.
 4. Test in Wokwi and/or on hardware before opening a pull request.
 
