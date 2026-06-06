@@ -1,5 +1,5 @@
-# Rust often needs a bit of an extra main task stack size compared to C (the default is 3K)
-CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+# Rust + std + LEDC init needs more main-task stack than bare C (default is 3K)
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=16384
 
 CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=4096
 CONFIG_FREERTOS_IDLE_TASK_STACKSIZE=4096
