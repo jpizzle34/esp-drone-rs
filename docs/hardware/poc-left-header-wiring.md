@@ -104,7 +104,7 @@ Each GPIO drives a **low-side N-channel MOSFET** (SI2300-class). Add a **Schottk
 | Gate resistor | 220 Ω (optional) | Between GPIO and gate |
 | Gate pull-down | 10 kΩ | Gate → GND |
 
-**POC bench:** motor **+** from **3.3 V** (8520 spin test). **Flight build:** motor **+** from **1S LiPo**; ESP32 **GND** common only — do not power motors from the ESP **3V3** pin on a real quad.
+**POC bench:** motor **+** from **1S LiPo (~3.8 V)** for the default spin test (firmware targets ~3.2 V average at ~84% PWM). LED-only GPIO checks can use **3.3 V** with no props — see [motor-led-flash-test.md](./motor-led-flash-test.md). **Flight build:** same LiPo supply; ESP32 **GND** common only — do not power motors from the ESP **3V3** pin on a real quad.
 
 ## Breadboard wiring diagram
 
@@ -117,7 +117,8 @@ Each GPIO drives a **low-side N-channel MOSFET** (SI2300-class). Add a **Schottk
          D25 (M3, BL)
          D26 (M4, FL)
 
-         motor + (×4) ◄── 3V3 (POC) or LiPo +     each: flyback C→+, A→−
+         motor + (×4) ◄── 1S LiPo + (spin test) or 3V3 (LED-only check)
+                              each: flyback C→+, A→−
 
          D14 (SDA) ──────────────────────────► MPU-6050 SDA
          D13 (SCL) ──────────────────────────► MPU-6050 SCL

@@ -43,7 +43,7 @@ MOSFET SOURCE ────────► GND
 
 Motors are custom **`chip-dc-motor`** parts (8520 coreless, 48×48 spinning prop). PWM is **15 kHz LEDC** from firmware — same as hardware.
 
-**POC power note:** The diagram ties motor **+** to the devkit **3V3** pin to match the firmware spin-test assumption (8520 @ 3.3 V). On a real build, motor **+** comes from **1S LiPo / VIN**; only **GND** must be common with the ESP32.
+**POC power note:** The Wokwi diagram ties motor **+** to the devkit **3V3** pin for a safe, low-torque simulation. On hardware, the spin test is tuned for **8520 @ 3.8 V** (1S LiPo) with ~**3.2 V** average at ~84% PWM — see [`motors/mod.rs`](../../Firmware/esp-drone-rs/src/motors/mod.rs). Motor **+** must not be powered from the ESP **3V3** pin on a real quad; only **GND** is common with the ESP32.
 
 ## Setup (one time)
 
@@ -73,9 +73,9 @@ Keep the Wokwi tab focused so the simulation keeps running.
 
 Matches the firmware `run_sequential_spin_test()` in [`motors/mod.rs`](../../Firmware/esp-drone-rs/src/motors/mod.rs):
 
-1. Serial banner with pin map and `Motor spin test begin`.
+1. Serial banner with pin map and `=== Motor spin test begin ===`.
 2. Orange **D27** — short blink before the test.
-3. **One motor spins at a time** (~200 ms at ~15% PWM, ~1 s gap), order **M1 → M2 → M3 → M4**.
+3. **One motor spins at a time** (1 s pulse at ~**84%** PWM / ~3.2 V avg @ 3.8 V supply, 1 s gap), order **M1 → M2 → M3 → M4**.
 4. Orange — two quick blinks, then 500 ms heartbeat.
 5. Serial logs each step, e.g. `Spin 1/4: M1 GPIO32 (D32) — front-right`.
 

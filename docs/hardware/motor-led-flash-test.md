@@ -1,6 +1,19 @@
-# Motor LED flash test
+# Motor LED flash test (optional)
 
-After flashing [`esp-drone-rs`](../../Firmware/esp-drone-rs/), the firmware runs a **sequential motor-channel test** on boot using LEDs wired to the four motor PWM pins.
+GPIO verification with **LEDs on the four motor PWM pins** — no props or motors required.
+
+> **Not the default boot test.** After flashing, [`esp-drone-rs`](../../Firmware/esp-drone-rs/) runs the **motor spin bench test** (`run_sequential_spin_test()`). Use this LED procedure only when you want to confirm wiring before attaching MOSFETs and motors. See the [README expected output](../../README.md#expected-output) and [wokwi-simulation.md](./wokwi-simulation.md) for the default behaviour.
+
+## Enable the LED test
+
+In [`main.rs`](../../Firmware/esp-drone-rs/src/main.rs), replace the spin test call:
+
+```rust
+// motor_pwm.run_sequential_spin_test()?;
+motor_pwm.run_sequential_led_test()?;
+```
+
+Rebuild and flash. Switch back to `run_sequential_spin_test()` when you are ready for the motor bench test.
 
 ## Wiring
 
@@ -13,11 +26,11 @@ Connect **one LED + 330 Ω resistor** per motor pin (cathode to GND). See [poc-l
 | 3 | M3 | 25 | D25 | Back-left | alone |
 | 4 | M4 | 26 | D26 | Front-left | alone |
 
-Optional: **D27** status LED (same as Phase 0) — blinks once before the test and twice after.
+Optional: **D27** status LED — blinks once before the test and twice after (same as the spin test).
 
 ## Flash and monitor
 
-See [wokwi-simulation.md](./wokwi-simulation.md) to run the same test in the **Wokwi simulator** first (no hardware).
+You can also run the default spin test in the [Wokwi simulator](./wokwi-simulation.md) first (no hardware).
 
 From `Firmware/esp-drone-rs/` (scripts load the ESP environment automatically):
 
@@ -34,7 +47,7 @@ cargo run              # debug
 cargo run --release    # release
 ```
 
-## Expected behaviour
+## Expected behaviour (LED test mode)
 
 1. Serial banner with pin map.
 2. **D27** — one short blink (test starting).
@@ -58,6 +71,7 @@ cargo run --release    # release
 | Wrong order | Swap labels on breadboard — follow table above |
 | Multiple LEDs on | Shared wiring fault or short |
 | Reboot loop | Check serial for panic; reduce duty in `motors/mod.rs` if needed |
+| Motors spin instead of LEDs | Still on `run_sequential_spin_test()` — swap the call in `main.rs` |
 
 ## Implementation
 

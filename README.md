@@ -208,16 +208,19 @@ cargo run
 
 ### Expected output
 
-After reset, the serial monitor should show a pin map, then a sequential motor spin test (M1 → M2 → M3 → M4), then a blinking status LED. Example:
+After reset, the serial monitor should show a pin map, then a sequential motor spin test (M1 → M2 → M3 → M4), then a blinking status LED. Each motor gets a **1 s** pulse at ~**84%** PWM (~3.2 V average on a **3.8 V** 1S supply), with a **1 s** gap between motors. Example:
 
 ```
 I (...) esp_drone_rs: ESP-Drone Rust firmware — motor spin bench test
-I (...) Motors (LEDC PWM): M1=GPIO32 ... M4=GPIO26
+I (...) Motors (LEDC PWM): M1=GPIO32 (D32, FR) ... M4=GPIO26 (D26, FL)
 W (...) === Motor spin test begin ===
+W (...) 8520 / 3.8 V / 55 mm props — 1000 ms pulse at ~84% PWM (~3.20 V avg), 1000 ms gap
 I (...) Spin 1/4: M1 GPIO32 (D32) — front-right
 ...
 I (...) Idle — status LED heartbeat on D27 / GPIO27
 ```
+
+For **LED-only** wiring checks (no motors), see [docs/hardware/motor-led-flash-test.md](docs/hardware/motor-led-flash-test.md) — that mode is not enabled by default.
 
 **Safety:** hold the frame down during the motor test; props can spin. See [docs/hardware/motor-led-flash-test.md](docs/hardware/motor-led-flash-test.md).
 
@@ -288,7 +291,7 @@ More Wokwi-specific issues: [docs/hardware/wokwi-simulation.md](docs/hardware/wo
 | [docs/hardware/elegoo-esp32-wroom32.md](docs/hardware/elegoo-esp32-wroom32.md)     | Board headers and pin profiles        |
 | [docs/hardware/poc-left-header-wiring.md](docs/hardware/poc-left-header-wiring.md) | Breadboard POC wiring                 |
 | [docs/hardware/wokwi-simulation.md](docs/hardware/wokwi-simulation.md)             | Run firmware in Wokwi                 |
-| [docs/hardware/motor-led-flash-test.md](docs/hardware/motor-led-flash-test.md)     | Boot test behaviour and pass criteria |
+| [docs/hardware/motor-led-flash-test.md](docs/hardware/motor-led-flash-test.md)     | Optional LED-only GPIO verification (not default boot test) |
 
 Pin definitions in code: `Firmware/esp-drone-rs/src/board/`.
 
