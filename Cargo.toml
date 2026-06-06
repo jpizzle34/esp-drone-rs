@@ -1,0 +1,3 @@
+[workspace]
+members = ["Firmware/esp-drone-rs"]
+resolver = "2"

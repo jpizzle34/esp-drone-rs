@@ -1,3 +1,6 @@
 {
-  "recommendations": ["wokwi.wokwi-vscode"]
+  "recommendations": [
+    "rust-lang.rust-analyzer",
+    "wokwi.wokwi-vscode"
+  ]
 }
