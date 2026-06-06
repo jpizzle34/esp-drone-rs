@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build for Wokwi",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/build-for-wokwi.sh",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$rustc"]
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "editor": "wokwi",
+  "author": "Co-Create ESP-FLY",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 40,
+      "left": 0,
+      "attrs": {
+        "flashSize": "4"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "title",
+      "top": 0,
+      "left": 0,
+      "attrs": {
+        "text": "ESP-Drone POC — motor LED test (POC_LEFT_HEADER pins)"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_m1",
+      "top": 40,
+      "left": 340,
+      "attrs": { "color": "red", "label": "M1 FR" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_m1",
+      "top": 80,
+      "left": 340,
+      "attrs": { "value": "330" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_m2",
+      "top": 120,
+      "left": 340,
+      "attrs": { "color": "green", "label": "M2 BR" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_m2",
+      "top": 160,
+      "left": 340,
+      "attrs": { "value": "330" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_m3",
+      "top": 200,
+      "left": 340,
+      "attrs": { "color": "blue", "label": "M3 BL" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_m3",
+      "top": 240,
+      "left": 340,
+      "attrs": { "value": "330" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_m4",
+      "top": 280,
+      "left": 340,
+      "attrs": { "color": "yellow", "label": "M4 FL" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_m4",
+      "top": 320,
+      "left": 340,
+      "attrs": { "value": "330" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_status",
+      "top": 360,
+      "left": 340,
+      "attrs": { "color": "orange", "label": "D27 status" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_status",
+      "top": 400,
+      "left": 340,
+      "attrs": { "value": "330" }
+    }
+  ],
+  "connections": [
+    ["esp:TX", "$serialMonitor:RX", "", []],
+    ["esp:RX", "$serialMonitor:TX", "", []],
+    ["esp:32", "led_m1:A", "red", ["h0"]],
+    ["led_m1:C", "r_m1:1", "black", []],
+    ["r_m1:2", "esp:GND.2", "black", []],
+    ["esp:33", "led_m2:A", "green", ["h0"]],
+    ["led_m2:C", "r_m2:1", "black", []],
+    ["r_m2:2", "esp:GND.2", "black", []],
+    ["esp:25", "led_m3:A", "blue", ["h0"]],
+    ["led_m3:C", "r_m3:1", "black", []],
+    ["r_m3:2", "esp:GND.2", "black", []],
+    ["esp:26", "led_m4:A", "yellow", ["h0"]],
+    ["led_m4:C", "r_m4:1", "black", []],
+    ["r_m4:2", "esp:GND.2", "black", []],
+    ["esp:27", "led_status:A", "orange", ["h0"]],
+    ["led_status:C", "r_status:1", "black", []],
+    ["r_status:2", "esp:GND.2", "black", []]
+  ],
+  "serialMonitor": {
+    "display": "terminal",
+    "convertEol": true
+  }
+}

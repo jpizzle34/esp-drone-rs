@@ -1,0 +1,26 @@
+[package]
+name = "esp-drone-rs"
+version = "0.1.0"
+authors = ["John Zambrano <johnnyz88@gmail.com>"]
+edition = "2021"
+resolver = "2"
+rust-version = "1.82"
+
+[[bin]]
+name = "esp-drone-rs"
+harness = false # do not use the built-in cargo test harness -> resolve rust-analyzer errors
+
+[profile.release]
+opt-level = "s"
+
+[profile.dev]
+debug = true    # Symbols are nice, and they don't increase the size on Flash
+opt-level = "z"
+[dependencies]
+anyhow = "1"
+log = "0.4"
+esp-idf-hal = "0.46.1"
+esp-idf-svc = { version = "0.52.1", features = ["critical-section"] }
+
+[build-dependencies]
+embuild = "0.33"

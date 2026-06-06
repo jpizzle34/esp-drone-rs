@@ -1,0 +1,5 @@
+[wokwi]
+version = 1
+# Rust ESP-IDF output (run `scripts/build-for-wokwi.sh` or `cargo build` first)
+elf = "target/xtensa-esp32-espidf/debug/esp-drone-rs"
+firmware = "target/xtensa-esp32-espidf/debug/esp-drone-rs"
