@@ -1,43 +1,13 @@
 {
-  "rust-analyzer.server.path": "${env:HOME}/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rust-analyzer",
-  "rust-analyzer.linkedProjects": [
-    "${workspaceFolder}/Firmware/esp-drone-rs/Cargo.toml"
-  ],
-  "rust-analyzer.cargo.target": "xtensa-esp32-espidf",
-  "rust-analyzer.checkOnSave.allTargets": false,
-  "rust-analyzer.cargo.features": [],
-  "rust-analyzer.cargo.extraEnv": {
-    "RUSTUP_TOOLCHAIN": "esp",
-    "MCU": "esp32",
-    "ESP_IDF_VERSION": "v5.5.3",
-    "ESP_IDF_TOOLS_INSTALL_DIR": "workspace"
-  },
-  "rust-analyzer.cargo.extraArgs": [
-    "-Zbuild-std=std,panic_abort"
-  ],
-  "lsp": {
-    "rust-analyzer": {
-      "initialization_options": {
-        "linkedProjects": [
-          "${workspaceFolder}/Firmware/esp-drone-rs/Cargo.toml"
-        ],
-        "cargo": {
-          "target": "xtensa-esp32-espidf",
-          "features": [],
-          "extraEnv": {
-            "RUSTUP_TOOLCHAIN": "esp",
-            "MCU": "esp32",
-            "ESP_IDF_VERSION": "v5.5.3",
-            "ESP_IDF_TOOLS_INSTALL_DIR": "workspace"
-          },
-          "extraArgs": [
-            "-Zbuild-std=std,panic_abort"
-          ]
-        },
-        "checkOnSave": {
-          "allTargets": false
-        }
-      }
-    }
-  }
+	"rust-analyzer.server.path": "/home/johnny/projects/Co-Create_ESP-FLY/Firmware/esp-drone-rs/scripts/rust-analyzer.sh",
+	"rust-analyzer.linkedProjects": ["Firmware/esp-drone-rs/Cargo.toml"],
+	"rust-analyzer.cargo.target": "xtensa-esp32-espidf",
+	"rust-analyzer.cargo.features": [],
+	"rust-analyzer.cargo.extraEnv": {
+		"RUSTUP_TOOLCHAIN": "esp",
+		"MCU": "esp32",
+		"ESP_IDF_VERSION": "v5.5.3",
+		"ESP_IDF_TOOLS_INSTALL_DIR": "workspace"
+	},
+	"rust-analyzer.cargo.extraArgs": ["-Zbuild-std=std,panic_abort"]
 }

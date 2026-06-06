@@ -1,0 +1,13 @@
+# When opening Firmware/esp-drone-rs/ directly (Cargo.toml is auto-discovered).
+[cargo]
+target = "xtensa-esp32-espidf"
+extraArgs = ["-Zbuild-std=std,panic_abort"]
+
+[cargo.extraEnv]
+RUSTUP_TOOLCHAIN = "esp"
+MCU = "esp32"
+ESP_IDF_VERSION = "v5.5.3"
+ESP_IDF_TOOLS_INSTALL_DIR = "workspace"
+
+[checkOnSave]
+allTargets = false

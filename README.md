@@ -254,7 +254,7 @@ You can open either folder:
 
 | Folder opened | rust-analyzer | Build tasks (Ctrl+Shift+B) |
 | ------------- | ------------- | -------------------------- |
-| **Repo root** (`Co-Create_ESP-FLY/`) | via `linkedProjects` in [`.vscode/settings.json`](.vscode/settings.json) | Flash / Build / Wokwi tasks in [`.vscode/tasks.json`](.vscode/tasks.json) |
+| **Repo root** (`Co-Create_ESP-FLY/`) | via [`rust-analyzer.toml`](rust-analyzer.toml) + `linkedProjects` in [`.vscode/settings.json`](.vscode/settings.json) | Flash / Build / Wokwi tasks in [`.vscode/tasks.json`](.vscode/tasks.json) |
 | **`Firmware/esp-drone-rs/`** | auto-discovers `Cargo.toml` | tasks in [`Firmware/esp-drone-rs/.vscode/tasks.json`](Firmware/esp-drone-rs/.vscode/tasks.json) |
 
 Recommended extensions (see `Firmware/esp-drone-rs/.vscode/extensions.json`):

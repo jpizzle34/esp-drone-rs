@@ -1,25 +1,31 @@
 //! Brushed motor PWM via LEDC (matches ESP-Drone: 15 kHz, 8-bit duty).
+//!
+//! Hardware wiring (GPIO → LEDC channel) lives in [`crate::board::init_motors`].
 
-use esp_idf_hal::gpio::{Gpio25, Gpio26, Gpio32, Gpio33};
-use esp_idf_hal::ledc::{config::TimerConfig, LedcDriver, LedcTimerDriver, LowSpeed, LEDC};
+use esp_idf_hal::ledc::{LedcDriver, LedcTimerDriver, LowSpeed};
 use esp_idf_hal::units::Hertz;
 
-use crate::board;
+use crate::board::{self, Motor};
 
 /// PWM frequency used by the C ESP-Drone `motors.c`.
 const PWM_FREQUENCY: Hertz = Hertz(15_000);
 
+/// Bench test mode — select in `main` before flashing.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[allow(dead_code)]
+pub enum BenchMode {
+    /// MOSFET indicator LEDs only; safe without propellers.
+    Led,
+    /// Spins 8520 motors one at a time; props attached, frame secured.
+    Spin,
+}
+
 // ---------------------------------------------------------------------------
 // LED bench test — no props; ~30 % duty lights the MOSFET indicator LEDs.
-// Kept for wiring checks without propellers attached.
 // ---------------------------------------------------------------------------
-#[allow(dead_code)]
 const LED_TEST_DUTY_NUMERATOR: u32 = 3;
-#[allow(dead_code)]
 const LED_TEST_DUTY_DENOMINATOR: u32 = 10;
-#[allow(dead_code)]
 const LED_TEST_ON_MS: u32 = 800;
-#[allow(dead_code)]
 const LED_TEST_GAP_MS: u32 = 400;
 
 // ---------------------------------------------------------------------------
@@ -33,73 +39,28 @@ const SPIN_DUTY_DENOMINATOR: u32 = 38;
 const SPIN_ON_MS: u32 = 1000;
 const SPIN_GAP_MS: u32 = 1000;
 
-pub struct MotorMeta {
-    pub name: &'static str,
-    pub corner: &'static str,
-    pub header: &'static str,
-    pub gpio: u8,
-}
-
-pub const MOTOR_TABLE: [MotorMeta; 4] = [
-    MotorMeta {
-        name: "M1",
-        corner: "front-right",
-        header: "D32",
-        gpio: board::MOTOR_M1,
-    },
-    MotorMeta {
-        name: "M2",
-        corner: "back-right",
-        header: "D33",
-        gpio: board::MOTOR_M2,
-    },
-    MotorMeta {
-        name: "M3",
-        corner: "back-left",
-        header: "D25",
-        gpio: board::MOTOR_M3,
-    },
-    MotorMeta {
-        name: "M4",
-        corner: "front-left",
-        header: "D26",
-        gpio: board::MOTOR_M4,
-    },
-];
-
 pub struct Motors {
     _timer: LedcTimerDriver<'static, LowSpeed>,
     max_duty: u32,
-    m1: LedcDriver<'static>,
-    m2: LedcDriver<'static>,
-    m3: LedcDriver<'static>,
-    m4: LedcDriver<'static>,
+    drivers: [LedcDriver<'static>; 4],
 }
 
 impl Motors {
-    pub fn new(
-        ledc: LEDC,
-        gpio32: Gpio32<'static>,
-        gpio33: Gpio33<'static>,
-        gpio25: Gpio25<'static>,
-        gpio26: Gpio26<'static>,
+    /// PWM frequency — used by [`crate::board::init_motors`] when creating the shared timer.
+    pub const fn pwm_frequency() -> Hertz {
+        PWM_FREQUENCY
+    }
+
+    /// Construct from hardware already wired by the board layer.
+    pub fn from_drivers(
+        timer: LedcTimerDriver<'static, LowSpeed>,
+        drivers: [LedcDriver<'static>; 4],
     ) -> anyhow::Result<Self> {
-        let timer_config = TimerConfig::default().frequency(PWM_FREQUENCY.into());
-        let timer = LedcTimerDriver::new(ledc.timer0, &timer_config)?;
-
-        let m1 = LedcDriver::new(ledc.channel0, &timer, gpio32)?;
-        let max_duty = m1.get_max_duty();
-        let m2 = LedcDriver::new(ledc.channel1, &timer, gpio33)?;
-        let m3 = LedcDriver::new(ledc.channel2, &timer, gpio25)?;
-        let m4 = LedcDriver::new(ledc.channel3, &timer, gpio26)?;
-
+        let max_duty = drivers[0].get_max_duty();
         let mut motors = Self {
             _timer: timer,
             max_duty,
-            m1,
-            m2,
-            m3,
-            m4,
+            drivers,
         };
         motors.all_off()?;
         Ok(motors)
@@ -109,7 +70,6 @@ impl Motors {
         self.max_duty * numerator / denominator
     }
 
-    #[allow(dead_code)]
     pub fn led_test_duty(&self) -> u32 {
         self.duty_percent(LED_TEST_DUTY_NUMERATOR, LED_TEST_DUTY_DENOMINATOR)
     }
@@ -118,19 +78,26 @@ impl Motors {
         self.duty_percent(SPIN_DUTY_NUMERATOR, SPIN_DUTY_DENOMINATOR)
     }
 
-    pub fn set_duty(&mut self, index: usize, duty: u32) -> anyhow::Result<()> {
-        self.driver_mut(index)?.set_duty(duty)?;
+    pub fn set_duty(&mut self, motor: Motor, duty: u32) -> anyhow::Result<()> {
+        self.drivers[motor.as_usize()].set_duty(duty)?;
         Ok(())
     }
 
     pub fn all_off(&mut self) -> anyhow::Result<()> {
-        for i in 0..4 {
-            self.set_duty(i, 0)?;
+        for motor in Motor::ALL {
+            self.set_duty(motor, 0)?;
         }
         Ok(())
     }
 
-    #[allow(dead_code)]
+    /// Run the selected bench test sequence.
+    pub fn run_bench_test(&mut self, mode: BenchMode) -> anyhow::Result<()> {
+        match mode {
+            BenchMode::Led => self.run_sequential_led_test(),
+            BenchMode::Spin => self.run_sequential_spin_test(),
+        }
+    }
+
     /// Sequential LED test: M1 → M2 → M3 → M4, one channel at a time (no props).
     pub fn run_sequential_led_test(&mut self) -> anyhow::Result<()> {
         let test_duty = self.led_test_duty();
@@ -145,18 +112,18 @@ impl Motors {
 
         self.all_off()?;
 
-        for (index, meta) in MOTOR_TABLE.iter().enumerate() {
+        for (step, meta) in board::MOTOR_TABLE.iter().enumerate() {
             log::info!(
                 "Step {}/4: {} GPIO{} ({}) — {}",
-                index + 1,
-                meta.name,
+                step + 1,
+                meta.motor.name(),
                 meta.gpio,
                 meta.header,
                 meta.corner
             );
-            self.set_duty(index, test_duty)?;
+            self.set_duty(meta.motor, test_duty)?;
             esp_idf_hal::delay::FreeRtos::delay_ms(LED_TEST_ON_MS);
-            self.set_duty(index, 0)?;
+            self.set_duty(meta.motor, 0)?;
             esp_idf_hal::delay::FreeRtos::delay_ms(LED_TEST_GAP_MS);
         }
 
@@ -186,33 +153,23 @@ impl Motors {
         self.all_off()?;
         esp_idf_hal::delay::FreeRtos::delay_ms(500);
 
-        for (index, meta) in MOTOR_TABLE.iter().enumerate() {
+        for (step, meta) in board::MOTOR_TABLE.iter().enumerate() {
             log::info!(
                 "Spin {}/4: {} GPIO{} ({}) — {}",
-                index + 1,
-                meta.name,
+                step + 1,
+                meta.motor.name(),
                 meta.gpio,
                 meta.header,
                 meta.corner
             );
-            self.set_duty(index, spin_duty)?;
+            self.set_duty(meta.motor, spin_duty)?;
             esp_idf_hal::delay::FreeRtos::delay_ms(SPIN_ON_MS);
-            self.set_duty(index, 0)?;
+            self.set_duty(meta.motor, 0)?;
             esp_idf_hal::delay::FreeRtos::delay_ms(SPIN_GAP_MS);
         }
 
         log::info!("=== Motor spin test complete ===");
         log::info!("Pass: M1 → M2 → M3 → M4 each twitched briefly with props");
         Ok(())
-    }
-
-    fn driver_mut(&mut self, index: usize) -> anyhow::Result<&mut LedcDriver<'static>> {
-        Ok(match index {
-            0 => &mut self.m1,
-            1 => &mut self.m2,
-            2 => &mut self.m3,
-            3 => &mut self.m4,
-            _ => anyhow::bail!("invalid motor index {index}"),
-        })
     }
 }
