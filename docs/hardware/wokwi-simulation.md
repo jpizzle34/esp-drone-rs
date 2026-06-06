@@ -1,25 +1,46 @@
 # Wokwi simulation
 
-Simulate the motor LED bench test in [Wokwi](https://wokwi.com/) before flashing the Elegoo board.
+Simulate the **8520 brushed motor** bench test in [Wokwi](https://wokwi.com/) before flashing the Elegoo board.
 
 Files live in [`Firmware/esp-drone-rs/`](../../Firmware/esp-drone-rs/):
 
 | File | Purpose |
 |------|---------|
-| [`wokwi.toml`](../../Firmware/esp-drone-rs/wokwi.toml) | Points Wokwi at the Rust ELF |
-| [`diagram.json`](../../Firmware/esp-drone-rs/diagram.json) | ESP32-DevKitC + 5 LEDs on POC pins |
+| [`wokwi.toml`](../../Firmware/esp-drone-rs/wokwi.toml) | Points Wokwi at the Rust ELF + registers custom chips |
+| [`diagram.json`](../../Firmware/esp-drone-rs/diagram.json) | ESP32 + 4× MOSFET + 4× DC motor (POC pins) |
+| [`mosfet-n.chip.wasm`](../../Firmware/esp-drone-rs/mosfet-n.chip.wasm) | Compiled MOSFET driver (required for VS Code sim) |
+| [`dc-motor.chip.wasm`](../../Firmware/esp-drone-rs/dc-motor.chip.wasm) | Compiled 8520 DC motor (spinning prop display) |
+| [`dc-motor.chip.json`](../../Firmware/esp-drone-rs/dc-motor.chip.json) | Motor pinout + 3.3 V supply control |
+| [`dc-motor.chip.c`](../../Firmware/esp-drone-rs/dc-motor.chip.c) | Motor simulation source |
+| [`mosfet-n.chip.json`](../../Firmware/esp-drone-rs/mosfet-n.chip.json) | MOSFET pinout |
+| [`chip-diode.chip.wasm`](../../Firmware/esp-drone-rs/chip-diode.chip.wasm) | Schottky flyback diode (freewheel) |
+| [`chip-diode.chip.c`](../../Firmware/esp-drone-rs/chip-diode.chip.c) | Diode sim source ([drf5n/Wokwi-Chip-Diode](https://github.com/drf5n/Wokwi-Chip-Diode)) |
 
 ## Circuit (matches POC_LEFT_HEADER)
 
-| LED | GPIO | Motor / role |
-|-----|------|----------------|
-| Red | 32 | M1 front-right |
-| Green | 33 | M2 back-right |
-| Blue | 25 | M3 back-left |
-| Yellow | 26 | M4 front-left |
-| Orange | 27 | Status (blinks before/after test) |
+Each motor channel mirrors ESP-Drone / ESP-FLY hardware (low-side N-MOSFET + flyback diode):
 
-Each LED has a 330 Ω resistor to GND in the diagram.
+```
+GPIO (PWM) ──[220 Ω]──► MOSFET GATE ──[10 kΩ]──► GND
+motor supply ─────────► motor +  (8520 + terminal; 3V3 POC or 1S LiPo)
+                    ┌──►|── Schottky flyback (cathode → motor +)
+motor − ────────────┴──► MOSFET DRAIN
+MOSFET SOURCE ────────► GND
+```
+
+**Flyback diode:** cathode to **motor + / supply**, anode to **motor − / MOSFET drain**. Clamps inductive kick when the FET turns off. Use a **Schottky** (e.g. SS14, 1N5819) on breadboard builds — one per motor.
+
+| Motor | GPIO | Header | Frame corner | Wokwi part |
+|-------|------|--------|--------------|------------|
+| M1 | 32 | D32 | Front-right | `motor_m1` |
+| M2 | 33 | D33 | Back-right | `motor_m2` |
+| M3 | 25 | D25 | Back-left | `motor_m3` |
+| M4 | 26 | D26 | Front-left | `motor_m4` |
+| Status | 27 | D27 | — | Orange LED + 330 Ω |
+
+Motors are custom **`chip-dc-motor`** parts (8520 coreless, 48×48 spinning prop). PWM is **15 kHz LEDC** from firmware — same as hardware.
+
+**POC power note:** The diagram ties motor **+** to the devkit **3V3** pin to match the firmware spin-test assumption (8520 @ 3.3 V). On a real build, motor **+** comes from **1S LiPo / VIN**; only **GND** must be common with the ESP32.
 
 ## Setup (one time)
 
@@ -43,23 +64,30 @@ Keep the Wokwi tab focused so the simulation keeps running.
 
 ## Expected behaviour
 
-Same as [motor-led-flash-test.md](./motor-led-flash-test.md):
+Matches the firmware `run_sequential_spin_test()` in [`motors/mod.rs`](../../Firmware/esp-drone-rs/src/motors/mod.rs):
 
-1. Serial log with pin map and `Motor LED test begin`.
-2. Orange **D27** — short blink, then motor test.
-3. **One** coloured LED at a time (~800 ms), order: red → green → blue → yellow (M1→M4).
+1. Serial banner with pin map and `Motor spin test begin`.
+2. Orange **D27** — short blink before the test.
+3. **One motor spins at a time** (~200 ms at ~15% PWM, ~1 s gap), order **M1 → M2 → M3 → M4**.
 4. Orange — two quick blinks, then 500 ms heartbeat.
-5. Serial: `Motor LED test complete`.
+5. Serial logs each step, e.g. `Spin 1/4: M1 GPIO32 (D32) — front-right`.
+
+## LED-only diagram (optional)
+
+The previous LED-only bench diagram is equivalent for **GPIO verification** — replace `chip-dc-motor` + MOSFET chains with LED + 330 Ω to GND on each motor pin. The motor diagram is preferred when validating spin direction and sequential timing.
 
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
+| **`Missing chip Breakout`** (MOSFET, motor, or diode) | Custom chips need **`.chip.wasm`** + `[[chip]]` in `wokwi.toml`. Need `mosfet-n`, `dc-motor`, and `chip-diode` WASM files. Run `./scripts/build-for-wokwi.sh`, then **restart** the simulator. |
 | Firmware file not found | Run `./scripts/build-for-wokwi.sh` first |
 | Wrong workspace root | Open `Firmware/esp-drone-rs`, not the repo root |
 | `export-esp.sh` not found | Run `espup install`, then `source ~/export-esp.sh` |
 | Simulation hangs / no serial | Click the Wokwi panel; check build succeeded |
-| LEDs always off | Confirm ELF path in `wokwi.toml` matches `target/xtensa-esp32-espidf/debug/esp-drone-rs` |
+| Motors never spin | Confirm ELF built; check serial for `Motor spin test begin` |
+| Wrong motor order | Compare labels M1–M4 with [`poc-left-header-wiring.md`](./poc-left-header-wiring.md) |
+| Multiple motors spin together | Wiring fault in diagram — each GPIO must drive only one MOSFET gate |
 
 ## Optional: Wokwi CLI (CI)
 

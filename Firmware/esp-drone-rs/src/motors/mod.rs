@@ -23,16 +23,14 @@ const LED_TEST_ON_MS: u32 = 800;
 const LED_TEST_GAP_MS: u32 = 400;
 
 // ---------------------------------------------------------------------------
-// Motor spin test — 8520 coreless, 3.3 V supply, 3.2 V motor, 55 mm props.
+// Motor spin test — 8520 coreless, 3.8 V supply, 3.2 V target, 55 mm props.
 //
-// Goal: brief per-motor twitch/spin on the bench, not lift. One motor at a time.
-// Average motor voltage ≈ 3.3 V × duty (brushed, low PWM freq vs. 15 kHz).
-// C ESP-Drone `motorsTest()` uses 20 % for 50 ms without props; we stay lower
-// and shorter gaps are longer because props add load and thrust.
+// Goal: per-motor spin on the bench, not lift. One motor at a time.
+// Duty = 3.2 V / 3.8 V (~84 %); average motor voltage ≈ supply × duty.
 // ---------------------------------------------------------------------------
-const SPIN_DUTY_NUMERATOR: u32 = 15;
-const SPIN_DUTY_DENOMINATOR: u32 = 100;
-const SPIN_ON_MS: u32 = 200;
+const SPIN_DUTY_NUMERATOR: u32 = 32;
+const SPIN_DUTY_DENOMINATOR: u32 = 38;
+const SPIN_ON_MS: u32 = 1000;
 const SPIN_GAP_MS: u32 = 1000;
 
 pub struct MotorMeta {
@@ -169,7 +167,7 @@ impl Motors {
 
     /// Sequential motor spin test: M1 → M2 → M3 → M4, one motor at a time.
     ///
-    /// Tuned for 8520 coreless @ 3.3 V with 55 mm props — brief spin, no lift.
+    /// Tuned for 8520 coreless @ 3.8 V with 55 mm props — ~3.2 V avg, no lift.
     /// Secure the frame on the bench; props must spin freely.
     pub fn run_sequential_spin_test(&mut self) -> anyhow::Result<()> {
         let spin_duty = self.spin_test_duty();
@@ -177,10 +175,10 @@ impl Motors {
 
         log::warn!("=== Motor spin test begin ===");
         log::warn!(
-            "8520 / 3.3 V / 55 mm props — {} ms pulse at ~{}% PWM (~{:.2} V avg), {} ms gap",
+            "8520 / 3.8 V / 55 mm props — {} ms pulse at ~{}% PWM (~{:.2} V avg), {} ms gap",
             SPIN_ON_MS,
             duty_pct,
-            3.3 * SPIN_DUTY_NUMERATOR as f32 / SPIN_DUTY_DENOMINATOR as f32,
+            3.8 * SPIN_DUTY_NUMERATOR as f32 / SPIN_DUTY_DENOMINATOR as f32,
             SPIN_GAP_MS
         );
         log::warn!("Hold frame down; one motor spins at a time. No collective throttle.");

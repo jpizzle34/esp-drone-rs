@@ -3,3 +3,15 @@ version = 1
 # Rust ESP-IDF output (run `scripts/build-for-wokwi.sh` or `cargo build` first)
 elf = "target/xtensa-esp32-espidf/debug/esp-drone-rs"
 firmware = "target/xtensa-esp32-espidf/debug/esp-drone-rs"
+
+[[chip]]
+name = "mosfet-n"
+binary = "mosfet-n.chip.wasm"
+
+[[chip]]
+name = "dc-motor"
+binary = "dc-motor.chip.wasm"
+
+[[chip]]
+name = "diode"
+binary = "chip-diode.chip.wasm"

@@ -1,0 +1,5 @@
+{
+  "name": "MOSFET-N (SI2300 low-side)",
+  "author": "Co-Create ESP-FLY",
+  "pins": ["GATE", "DRAIN", "SOURCE", "", "", ""]
+}

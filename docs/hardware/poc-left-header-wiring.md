@@ -83,28 +83,56 @@ Pick a **front** direction on your frame and mount each motor at the matching co
 
 Motor test order in firmware (`M1 → M2 → M3 → M4`) follows **motor index**, not position around the frame clockwise.
 
+## Motor driver (per channel)
+
+Each GPIO drives a **low-side N-channel MOSFET** (SI2300-class). Add a **Schottky flyback diode** per motor to clamp inductive kick when the FET turns off.
+
+```
+  motor supply (+) ────────► motor +
+                         ┌──►|──  Schottky (cathode → +)
+  GPIO ──[220 Ω]──►|G    │    anode ──► motor −
+                   D|────┘
+                   |S
+                   └──► GND (common with ESP32)
+        gate ──[10 kΩ]──► GND   (pull-down)
+```
+
+| Part | Value / type | Notes |
+|------|----------------|-------|
+| MOSFET | N-ch (e.g. SI2300, AO3400) | Low-side switch |
+| Flyback diode | Schottky SS14 / 1N5819 | **C** → motor **+**, **A** → motor **−** / drain |
+| Gate resistor | 220 Ω (optional) | Between GPIO and gate |
+| Gate pull-down | 10 kΩ | Gate → GND |
+
+**POC bench:** motor **+** from **3.3 V** (8520 spin test). **Flight build:** motor **+** from **1S LiPo**; ESP32 **GND** common only — do not power motors from the ESP **3V3** pin on a real quad.
+
 ## Breadboard wiring diagram
 
 ```
-         Elegoo LEFT HEADER                    Breadboard / LEDs
-         ─────────────────                    ─────────────────
+         Elegoo LEFT HEADER                    Motor driver (×4, one shown)
+         ─────────────────                    ───────────────────────────
 
-         D32 (M1, FR) ───────────────────────► Motor / LED 1
-         D33 (M2, BR) ───────────────────────► Motor / LED 2
-         D25 (M3, BL) ───────────────────────► Motor / LED 3
-         D26 (M4, FL) ───────────────────────► Motor / LED 4
+         D32 (M1, FR) ───────────────────────► GPIO → MOSFET → M1 motor −
+         D33 (M2, BR) ───────────────────────► (same for M2–M4)
+         D25 (M3, BL)
+         D26 (M4, FL)
+
+         motor + (×4) ◄── 3V3 (POC) or LiPo +     each: flyback C→+, A→−
 
          D14 (SDA) ──────────────────────────► MPU-6050 SDA
          D13 (SCL) ──────────────────────────► MPU-6050 SCL
 
          D27 (LED) ────[ 330 Ω ]─── LED ─────► GND
 
-         GND ────────────────────────────────► GND rail
+         GND ────────────────────────────────► GND rail (ESP + MOSFET S + LiPo −)
          (3V3 from RIGHT header) ───────────► MPU-6050 VCC
 ```
+
+For GPIO-only checks without motors, use **LED + 330 Ω** on each motor pin instead of the MOSFET chain — see [motor-led-flash-test.md](./motor-led-flash-test.md).
 
 ## Notes
 
 - The **onboard LED (D2 / GPIO 2)** is on the right header and is **not used** in this POC profile. Phase 0 blink uses an **external LED on D27**.
 - **Do not** route motor or I2C signals to the right header in POC — keeps wiring on one side of the **board**, not the drone.
+- **Flyback diodes** (Schottky, one per motor) are required on **breadboard** builds with discrete MOSFETs; see [wokwi-simulation.md](./wokwi-simulation.md) for the matching Wokwi diagram.
 - For the production drone PCB, see `ESPLANE_V1` in [elegoo-esp32-wroom32.md](./elegoo-esp32-wroom32.md).
