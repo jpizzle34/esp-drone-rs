@@ -1,12 +1,12 @@
 # Legacy C firmware build artifacts
-Firmware/esp-drone/build/
-Firmware/esp-drone/sdkconfig
-Firmware/esp-drone/sdkconfig.old
+**/build/
+**/sdkconfig
+**/sdkconfig.old
 
 # Rust ESP-IDF firmware build artifacts (see also Firmware/esp-drone-rs/.gitignore)
-Firmware/esp-drone-rs/.embuild/
-Firmware/esp-drone-rs/target/
-Firmware/esp-drone-rs/sdkconfig
-Firmware/esp-drone-rs/sdkconfig.old
-Firmware/esp-drone-rs/wokwi-api.h
-Firmware/esp-drone-rs/chips/wokwi-api.h
+**/.embuild/
+**/target/
+**/sdkconfig
+**/sdkconfig.old
+**/wokwi-api.h
+**/chips/wokwi-api.h
