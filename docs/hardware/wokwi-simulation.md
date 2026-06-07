@@ -43,7 +43,7 @@ MOSFET SOURCE ────────► GND
 
 Motors are custom **`chip-dc-motor`** parts (8520 coreless, 48×48 spinning prop). PWM is **15 kHz LEDC** from firmware — same as hardware.
 
-**POC power note:** The Wokwi diagram ties motor **+** to the devkit **3V3** pin for a safe, low-torque simulation. On hardware, the spin test is tuned for **8520 @ 3.8 V** (1S LiPo) with ~**3.2 V** average at ~84% PWM — see [`motors/mod.rs`](../../Firmware/esp-drone-rs/src/motors/mod.rs). Motor **+** must not be powered from the ESP **3V3** pin on a real quad; only **GND** is common with the ESP32.
+**POC power note:** The Wokwi diagram ties motor **+** to the devkit **3V3** pin for a safe, low-torque simulation. On hardware, the spin test is tuned for **8520 @ 3.8 V** (1S LiPo) with ~**3.2 V** average at ~84% PWM — see [`drivers/motors/bench.rs`](../../Firmware/esp-drone-rs/src/drivers/motors/bench.rs). Motor **+** must not be powered from the ESP **3V3** pin on a real quad; only **GND** is common with the ESP32.
 
 ## Setup (one time)
 
@@ -71,7 +71,7 @@ Keep the Wokwi tab focused so the simulation keeps running.
 
 ## Expected behaviour
 
-Matches the firmware `run_sequential_spin_test()` in [`motors/mod.rs`](../../Firmware/esp-drone-rs/src/motors/mod.rs):
+Matches the firmware `run_bench_test(..., BenchMode::Spin)` in [`drivers/motors/bench.rs`](../../Firmware/esp-drone-rs/src/drivers/motors/bench.rs):
 
 1. Serial banner with pin map and `=== Motor spin test begin ===`.
 2. Orange **D27** — short blink before the test.

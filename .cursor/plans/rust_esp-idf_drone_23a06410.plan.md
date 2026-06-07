@@ -74,21 +74,25 @@ flowchart LR
 
 ---
 
-## Repo layout (start small, grow crates as needed)
+## Repo layout (single crate, module tree)
 
 ```
 Firmware/
   esp-drone/          # existing C — reference only
-  esp-drone-rs/       # new Rust firmware
-    Cargo.toml        # workspace (single binary crate OK for Phase 0–1)
-    .cargo/config.toml
-    sdkconfig.defaults
-    drone/
-      src/main.rs
-    # add crates/ later: board, drivers, flight, comm
+  esp-drone-rs/       # Rust firmware (single binary crate)
+    Cargo.toml
+    src/
+      main.rs         # composition root
+      board/          # pin profiles [active]
+      drivers/        # motors [active], imu/power [stub]
+      sensors/        # sample tasks [stub]
+      estimation/     # fusion [stub]
+      flight/         # stabilizer, PID, mixer [stub]
+      comm/           # serial, CRTP/WiFi [stub]
+      safety/         # arming, failsafe [stub]
 ```
 
-Phase 0 can be a **single crate**. Split into `board` / `drivers` / `flight` / `comm` when Phase 2 code size warrants it.
+Split into separate workspace crates later only if compile times or coupling warrant it.
 
 ---
 
@@ -159,7 +163,7 @@ Two small milestones; either order is fine, but **IMU first** is lower risk (no 
 
 **Scope:**
 
-- Extend LEDC to 4 channels — start with POC GPIOs, then switch to **ESPLANE_V1 motor pins** (4, 33, 32, 25) if using drone PCB
+- Extend LEDC to 4 channels — start with POC GPIOs, then switch to **ESPLANE_V1 motor pins** (4, 33, 32, 25) via [`esplane_v1.rs`](Firmware/esp-drone-rs/src/board/esplane_v1.rs) if using drone PCB
 - Motor test chirp on arm (from C `motors.c` test tones)
 - `board` module: `PocBoard` vs `EsplaneV1` pin profiles behind a feature flag
 - Arming: disarmed by default; arm only via explicit serial command; disarm on any error
@@ -180,10 +184,10 @@ Two small milestones; either order is fine, but **IMU first** is lower risk (no 
 
 | Component                     | C reference                                                                                                                                                                |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Complementary / Mahony fusion | `[sensfusion6.c](Firmware/esp-drone/components/core/crazyflie/modules/src/sensfusion6.c)`                                                                                  |
-| PID attitude control          | `[controller_pid.c](Firmware/esp-drone/components/core/crazyflie/modules/src/controller_pid.c)`, `[pid.c](Firmware/esp-drone/components/core/crazyflie/modules/src/pid.c)` |
-| X-quad mixer                  | `[power_distribution_stock.c](Firmware/esp-drone/components/core/crazyflie/modules/src/power_distribution_stock.c)`                                                        |
-| 1 kHz stabilizer loop         | `[stabilizer.c](Firmware/esp-drone/components/core/crazyflie/modules/src/stabilizer.c)`                                                                                    |
+| Complementary / Mahony fusion | `[sensfusion6.c](Firmware/esp-drone/components/core/crazyflie/modules/src/sensfusion6.c)` → `src/estimation/`                                                                                  |
+| PID attitude control          | `[controller_pid.c](Firmware/esp-drone/components/core/crazyflie/modules/src/controller_pid.c)`, `[pid.c](Firmware/esp-drone/components/core/crazyflie/modules/src/pid.c)` → `src/flight/pid.rs` |
+| X-quad mixer                  | `[power_distribution_stock.c](Firmware/esp-drone/components/core/crazyflie/modules/src/power_distribution_stock.c)` → `src/flight/mixer.rs`                                                        |
+| 1 kHz stabilizer loop         | `[stabilizer.c](Firmware/esp-drone/components/core/crazyflie/modules/src/stabilizer.c)` → `src/flight/stabilizer.rs`                                                                                    |
 
 **Also:**
 

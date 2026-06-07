@@ -21,4 +21,26 @@ cd Firmware/esp-drone-rs
 ./scripts/build-for-wokwi.sh  # debug build for Wokwi simulation
 ```
 
-Source of truth in code: [`elegoo_esp32_wroom32.rs`](../../Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs) (pins) and [`motors/mod.rs`](../../Firmware/esp-drone-rs/src/motors/mod.rs) (boot tests).
+## Firmware source (`Firmware/esp-drone-rs/src/`)
+
+```text
+src/
+├── main.rs           composition root
+├── board/            pin profiles (Elegoo POC active, ESPLANE_V1 planned)
+├── drivers/
+│   ├── motors/       LEDC PWM + bench tests [active]
+│   ├── imu/          MPU6050 I2C [stub]
+│   └── power/        battery ADC [stub]
+├── sensors/          sample tasks [stub]
+├── estimation/       attitude fusion [stub]
+├── flight/           stabilizer, PID, mixer [stub]
+├── comm/             serial + CRTP / WiFi [stub]
+└── safety/           arming gate, failsafe [stub]
+```
+
+**Board pin maps**
+
+- **POC (active):** [`elegoo_esp32_wroom32.rs`](../../Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs) — `POC_LEFT_HEADER` metadata and [`DronePins::take`](../../Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs)
+- **ESPLANE_V1 (planned):** [`esplane_v1.rs`](../../Firmware/esp-drone-rs/src/board/esplane_v1.rs) — GPIO constants; full [`BoardProfile`](../../Firmware/esp-drone-rs/src/board/profile.rs) not implemented yet
+
+**Boot test:** [`drivers/motors/bench.rs`](../../Firmware/esp-drone-rs/src/drivers/motors/bench.rs) — `run_bench_test` with `BenchMode::Spin` (default in [`main.rs`](../../Firmware/esp-drone-rs/src/main.rs)).

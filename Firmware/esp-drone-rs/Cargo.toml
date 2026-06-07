@@ -16,6 +16,12 @@ opt-level = "s"
 [profile.dev]
 debug = true    # Symbols are nice, and they don't increase the size on Flash
 opt-level = "z"
+
+[features]
+default = ["board-elegoo-poc"]
+board-elegoo-poc = []
+board-esplane-v1 = []
+
 [dependencies]
 anyhow = "1"
 log = "0.4"
