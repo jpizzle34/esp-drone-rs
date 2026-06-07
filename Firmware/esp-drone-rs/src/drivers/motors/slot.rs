@@ -1,4 +1,4 @@
-//! Logical motor slots (M1–M4). GPIO mapping lives in each board file.
+//! Logical motor slots (M1–M4). Board profiles map each slot to GPIO.
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 #[repr(usize)]
@@ -26,10 +26,10 @@ impl Motor {
     }
 }
 
-/// Bench-test / wiring metadata for one motor (GPIO number is for humans + logs).
-pub struct MotorMeta {
-    pub motor: Motor,
-    pub gpio: u8,
-    pub header: &'static str,
-    pub corner: &'static str,
+impl TryFrom<usize> for Motor {
+    type Error = ();
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        Self::ALL.get(value).copied().ok_or(())
+    }
 }

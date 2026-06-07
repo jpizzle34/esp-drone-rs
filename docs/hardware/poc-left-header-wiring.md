@@ -2,7 +2,7 @@
 
 All POC signals are on the **left header** so a breadboard can sit on one side of the board with short jumpers. USB stays at the bottom; **VIN** is **bottom-left**.
 
-Active firmware profile: `POC_LEFT_HEADER` in [`elegoo_esp32_wroom32.rs`](../../Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs).
+Active firmware profile: `POC_LEFT_HEADER` in [`elegoo_esp32_wroom32.rs`](../../Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs). All GPIO claiming for this profile goes through [`DronePins::take`](../../Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs).
 
 ## Left header pin map (POC)
 
@@ -136,4 +136,4 @@ For GPIO-only checks without motors, use **LED + 330 Ω** on each motor pin inst
 - The **onboard LED (D2 / GPIO 2)** is on the right header and is **not used** in this POC profile. Phase 0 blink uses an **external LED on D27**.
 - **Do not** route motor or I2C signals to the right header in POC — keeps wiring on one side of the **board**, not the drone.
 - **Flyback diodes** (Schottky, one per motor) are required on **breadboard** builds with discrete MOSFETs; see [wokwi-simulation.md](./wokwi-simulation.md) for the matching Wokwi diagram.
-- For the production drone PCB, see `ESPLANE_V1` in [elegoo-esp32-wroom32.md](./elegoo-esp32-wroom32.md).
+- For the production drone PCB, see the ESPLANE_V1 section in [elegoo-esp32-wroom32.md](./elegoo-esp32-wroom32.md) and [`esplane_v1.rs`](../../Firmware/esp-drone-rs/src/board/esplane_v1.rs).

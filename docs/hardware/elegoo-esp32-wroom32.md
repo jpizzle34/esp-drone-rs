@@ -38,7 +38,7 @@ Development board used for the Rust firmware POC: dual-core Xtensa ESP32, CP2102
 | Profile | Status | Use case |
 |---------|--------|----------|
 | [`POC_LEFT_HEADER`](./poc-left-header-wiring.md) | **Active** | Breadboard POC — all drone wires on left header |
-| `ESPLANE_V1` | Reference | ESP-Drone classic ESP32 drone PCB (mixed headers) |
+| [`ESPLANE_V1`](../../Firmware/esp-drone-rs/src/board/esplane_v1.rs) | Planned | ESP-Drone classic ESP32 drone PCB (mixed headers) |
 
 ### POC_LEFT_HEADER (active)
 
@@ -52,7 +52,11 @@ Development board used for the Rust firmware POC: dual-core Xtensa ESP32, CP2102
 | Motor M3 | 25 | D25 | LEDC PWM — **back-left** |
 | Motor M4 | 26 | D26 | LEDC PWM — **front-left** |
 
-### ESPLANE_V1 (reference only)
+In Rust firmware, GPIO claiming for this profile is centralized in [`DronePins::take`](../../Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs) (`MotorPins`, `ImuPins`, and status LED are grouped there).
+
+### ESPLANE_V1 (planned — `board-esplane-v1` feature)
+
+Production PCB profile; firmware not implemented yet. Pin constants live in [`esplane_v1.rs`](../../Firmware/esp-drone-rs/src/board/esplane_v1.rs) (Cargo feature `board-esplane-v1`).
 
 | Function | GPIO | Header | Frame corner |
 |----------|------|--------|--------------|

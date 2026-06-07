@@ -26,6 +26,15 @@ No drone frame or motors are required to **build** the project. You can run the 
 Co-Create_ESP-FLY/          ← clone the repo here (any folder name is fine)
 ├── Firmware/
 │   ├── esp-drone-rs/       ← **Rust firmware — build and flash from here**
+│   │   ├── src/
+│   │   │   ├── main.rs     ← composition root (boot, bench test, idle loop)
+│   │   │   ├── board/      ← pin profiles (Elegoo POC, ESPLANE_V1 stub)
+│   │   │   ├── drivers/    ← hardware drivers (motors active; imu/power stub)
+│   │   │   ├── sensors/    ← sample tasks (stub)
+│   │   │   ├── estimation/ ← attitude fusion (stub)
+│   │   │   ├── flight/     ← stabilizer, PID, mixer (stub)
+│   │   │   ├── comm/       ← serial + CRTP / WiFi (stub)
+│   │   │   └── safety/     ← arming gate, failsafe (stub)
 │   │   ├── .cargo/config.toml
 │   │   ├── rust-toolchain.toml
 │   │   ├── Cargo.toml
@@ -293,7 +302,20 @@ More Wokwi-specific issues: [docs/hardware/wokwi-simulation.md](docs/hardware/wo
 | [docs/hardware/wokwi-simulation.md](docs/hardware/wokwi-simulation.md)             | Run firmware in Wokwi                 |
 | [docs/hardware/motor-led-flash-test.md](docs/hardware/motor-led-flash-test.md)     | Optional LED-only GPIO verification (not default boot test) |
 
-Pin definitions in code: `Firmware/esp-drone-rs/src/board/`.
+**Firmware source layout** (`Firmware/esp-drone-rs/src/`):
+
+| Module | Status | Role |
+|--------|--------|------|
+| [`board/`](Firmware/esp-drone-rs/src/board/) | Active | Pin profiles — one file per board; [`BoardProfile`](Firmware/esp-drone-rs/src/board/profile.rs) + `DronePins::take` |
+| [`drivers/motors/`](Firmware/esp-drone-rs/src/drivers/motors/) | Active | LEDC PWM, bench tests (`run_bench_test`) |
+| [`drivers/imu/`](Firmware/esp-drone-rs/src/drivers/imu/), [`drivers/power/`](Firmware/esp-drone-rs/src/drivers/power/) | Stub | MPU6050 I2C, battery ADC |
+| [`sensors/`](Firmware/esp-drone-rs/src/sensors/) | Stub | IMU sample tasks |
+| [`estimation/`](Firmware/esp-drone-rs/src/estimation/) | Stub | Attitude fusion |
+| [`flight/`](Firmware/esp-drone-rs/src/flight/) | Stub | 1 kHz stabilizer, PID, X-quad mixer |
+| [`comm/`](Firmware/esp-drone-rs/src/comm/) | Stub | Serial commands, CRTP / WiFi |
+| [`safety/`](Firmware/esp-drone-rs/src/safety/) | Stub | Arming gate, link-loss failsafe |
+
+Pin maps: [`elegoo_esp32_wroom32.rs`](Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs) (active POC), [`esplane_v1.rs`](Firmware/esp-drone-rs/src/board/esplane_v1.rs) (planned production PCB). Module tree is documented in [`drivers/mod.rs`](Firmware/esp-drone-rs/src/drivers/mod.rs).
 
 ---
 

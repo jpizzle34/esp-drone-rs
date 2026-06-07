@@ -2,18 +2,17 @@
 
 GPIO verification with **LEDs on the four motor PWM pins** — no props or motors required.
 
-> **Not the default boot test.** After flashing, [`esp-drone-rs`](../../Firmware/esp-drone-rs/) runs the **motor spin bench test** (`run_sequential_spin_test()`). Use this LED procedure only when you want to confirm wiring before attaching MOSFETs and motors. See the [README expected output](../../README.md#expected-output) and [wokwi-simulation.md](./wokwi-simulation.md) for the default behaviour.
+> **Not the default boot test.** After flashing, [`esp-drone-rs`](../../Firmware/esp-drone-rs/) runs the **motor spin bench test** (`BenchMode::Spin`). Use this LED procedure only when you want to confirm wiring before attaching MOSFETs and motors. See the [README expected output](../../README.md#expected-output) and [wokwi-simulation.md](./wokwi-simulation.md) for the default behaviour.
 
 ## Enable the LED test
 
-In [`main.rs`](../../Firmware/esp-drone-rs/src/main.rs), replace the spin test call:
+In [`main.rs`](../../Firmware/esp-drone-rs/src/main.rs), change the bench mode constant:
 
 ```rust
-// motor_pwm.run_sequential_spin_test()?;
-motor_pwm.run_sequential_led_test()?;
+const BENCH_MODE: BenchMode = BenchMode::Led;  // default is BenchMode::Spin
 ```
 
-Rebuild and flash. Switch back to `run_sequential_spin_test()` when you are ready for the motor bench test.
+Rebuild and flash. Switch back to `BenchMode::Spin` when you are ready for the motor bench test.
 
 ## Wiring
 
@@ -70,12 +69,12 @@ cargo run --release    # release
 | No LEDs | Wrong GPIO, LED polarity, missing resistor, or not on left header pins |
 | Wrong order | Swap labels on breadboard — follow table above |
 | Multiple LEDs on | Shared wiring fault or short |
-| Reboot loop | Check serial for panic; reduce duty in `motors/mod.rs` if needed |
-| Motors spin instead of LEDs | Still on `run_sequential_spin_test()` — swap the call in `main.rs` |
+| Reboot loop | Check serial for panic; reduce duty in `drivers/motors/bench.rs` if needed |
+| Motors spin instead of LEDs | Still on `BenchMode::Spin` — change `BENCH_MODE` in `main.rs` |
 
 ## Implementation
 
-- Test logic: [`Firmware/esp-drone-rs/src/motors/mod.rs`](../../Firmware/esp-drone-rs/src/motors/mod.rs) — `run_sequential_led_test()`
+- Test logic: [`drivers/motors/bench.rs`](../../Firmware/esp-drone-rs/src/drivers/motors/bench.rs) — `run_bench_test` with `BenchMode::Led`
 - Based on C [`motorsTest()`](../../Firmware/esp-drone/components/drivers/general/motors/motors.c) (longer on-time for visible LEDs).
 - PWM: **15 kHz**, 8-bit LEDC (same as ESP-Drone).
 
