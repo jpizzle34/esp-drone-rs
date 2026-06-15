@@ -3,7 +3,7 @@
 //! Uses the ESP-IDF default **non-blocking** console VFS (no `esp_vfs_dev_uart_use_driver`).
 //! That driver switch deadlocks / trips the interrupt WDT in Wokwi and some hosts.
 //!
-//! **Input modes:** command lines (`> ` prompt) vs joystick (`joy on`, then W/S keys; `Q` to exit).
+//! **Input modes:** command lines (`> ` prompt) vs joystick (`joy on`, E/C + WASD; `Q` to exit).
 
 mod commands;
 mod joystick;

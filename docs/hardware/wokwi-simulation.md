@@ -1,6 +1,6 @@
 # Wokwi simulation
 
-Simulate the **8520 brushed motor** bench test and **MPU-6050 IMU stream** in [Wokwi](https://wokwi.com/) before flashing the Elegoo board.
+Simulate **8520 brushed motors**, the **serial REPL**, **joystick mode**, and **MPU-6050 IMU** in [Wokwi](https://wokwi.com/) before flashing the Elegoo board.
 
 Files live in [`Firmware/esp-drone-rs/`](../../Firmware/esp-drone-rs/):
 
@@ -45,7 +45,7 @@ MOSFET SOURCE ────────► GND
 
 Motors are custom **`chip-dc-motor`** parts (8520 coreless, 48×48 spinning prop). PWM is **15 kHz LEDC** from firmware — same as hardware.
 
-**POC power note:** The Wokwi diagram ties motor **+** to the devkit **3V3** pin for a safe, low-torque simulation. On hardware, the spin test is tuned for **8520 @ 3.8 V** (1S LiPo) with ~**3.2 V** average at ~84% PWM — see [`drivers/motors/bench.rs`](../../Firmware/esp-drone-rs/src/drivers/motors/bench.rs). Motor **+** must not be powered from the ESP **3V3** pin on a real quad; only **GND** is common with the ESP32.
+**POC power note:** The Wokwi diagram ties motor **+** to the devkit **3V3** pin for a safe, low-torque simulation. On hardware, use **8520 @ 3.8 V** (1S LiPo) for meaningful thrust — motor **+** must not be powered from the ESP **3V3** pin on a real quad; only **GND** is common with the ESP32.
 
 ## Setup (one time)
 
@@ -59,47 +59,56 @@ From `Firmware/esp-drone-rs/` (the script loads the ESP environment automaticall
 
 ```bash
 cd Firmware/esp-drone-rs
-./scripts/build-for-wokwi.sh
+./scripts/build-for-wokwi.sh   # first time, or if chip WASM is missing
+# day-to-day firmware changes:
+cargo build                    # same debug ELF Wokwi uses
 ```
 
-This runs a **debug** build and compiles custom Wokwi chip WASM files if `wokwi-cli` is available.
+`build-for-wokwi.sh` also compiles custom Wokwi chip WASM if `wokwi-cli` is available. ELF path: `target/xtensa-esp32-espidf/debug/esp-drone-rs`.
 
 In VS Code:
 
 1. **Terminal → Run Build Task** (or `Ctrl+Shift+B`) — choose **Build for Wokwi** (works when the repo root or `esp-drone-rs` folder is open).
 2. Command palette → **Wokwi: Start Simulator**.
+3. **Stop and restart** the simulator after rebuilding so it reloads the ELF.
 
 Keep the Wokwi tab focused so the simulation keeps running.
 
 ## Expected behaviour
 
-Matches the firmware `run_bench_test(..., BenchMode::Spin)` in [`drivers/motors/bench.rs`](../../Firmware/esp-drone-rs/src/drivers/motors/bench.rs):
-
-1. Serial banner with pin map and `=== Motor spin test begin ===`.
-2. Orange **D27** — short blink before the test.
-3. **One motor spins at a time** (1 s pulse at ~**84%** PWM / ~3.2 V avg @ 3.8 V supply, 1 s gap), order **M1 → M2 → M3 → M4**.
+1. Serial banner with pin map (`serial command mode`).
+2. Orange **D27** — short blink during init.
+3. `Serial command task ready — type 'help'` and `>` prompt. **Motors stay off** until commanded.
 4. Orange — two quick blinks, then 500 ms heartbeat.
-5. Serial logs each motor step, e.g. `Spin 1/4: M1 GPIO32 (D32) — front-right`.
-6. **MPU-6050** (optional) — after boot, type `imu on` in the serial monitor for 10 Hz tilt/accel lines; `imu off` to stop. Motors: `help`, `motor 2 30`, `stop`.
+5. In the Wokwi serial monitor, try:
+   - `motor 2 30` — one motor spins
+   - `motor all 25` — all four spin
+   - `joy on` then **E** / **W** / **A** — throttle + X-quad mix (**Q** to quit)
+   - `imu on` / `imu off` — MPU-6050 stream (if wired in diagram)
+
+Full command list: [serial-commands.md](./serial-commands.md).
 
 ## LED-only diagram (optional)
 
-The previous LED-only bench diagram is equivalent for **GPIO verification** — replace `chip-dc-motor` + MOSFET chains with LED + 330 Ω to GND on each motor pin. The motor diagram is preferred when validating spin direction and sequential timing.
+Replace `chip-dc-motor` + MOSFET chains with LED + 330 Ω to GND on each motor pin for GPIO verification, or use per-motor serial commands (`motor 1 30`, …). See [motor-led-flash-test.md](./motor-led-flash-test.md).
 
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
-| **`Missing chip Breakout`** (MOSFET, motor, or diode) | Custom chips need **`.chip.wasm`** + `[[chip]]` in `wokwi.toml`. Need `mosfet-n`, `dc-motor`, and `chip-diode` WASM files. Run `./scripts/build-for-wokwi.sh`, then **restart** the simulator. |
-| Firmware file not found | Run `./scripts/build-for-wokwi.sh` first. ELF path: `target/xtensa-esp32-espidf/debug/esp-drone-rs` |
-| Wrong workspace root | Open `Firmware/esp-drone-rs`, not the repo root (Wokwi resolves paths relative to the VS Code workspace folder) |
-| `~/export-esp.sh` not found | Run `espup install`. Scripts source it automatically; or `source ~/export-esp.sh` before manual `cargo` |
-| `LIBCLANG_PATH` / linker errors | ESP env not loaded — use `./scripts/build-for-wokwi.sh` instead of raw `cargo build` |
-| Simulation hangs / no serial | Click the Wokwi panel; check build succeeded |
-| Motors never spin | Confirm ELF built; check serial for `Motor spin test begin` |
-| Wrong motor order | Compare labels M1–M4 with [`poc-left-header-wiring.md`](./poc-left-header-wiring.md) |
-| IMU init failed | Add MPU-6050 to diagram (SDA→GPIO14, SCL→GPIO13, VCC→3V3, GND→GND) or ignore if testing motors only |
+| **`Missing chip Breakout`** (MOSFET, motor, or diode) | Custom chips need **`.chip.wasm`** + `[[chip]]` in `wokwi.toml`. Run `./scripts/build-for-wokwi.sh`, then **restart** the simulator. |
+| Firmware file not found | Run `cargo build` or `./scripts/build-for-wokwi.sh`. ELF: `target/xtensa-esp32-espidf/debug/esp-drone-rs` |
+| Stale firmware in sim | **Stop** Wokwi completely, rebuild, **Start Simulator** again |
+| Wrong workspace root | Open `Firmware/esp-drone-rs`, not the repo root |
+| `~/export-esp.sh` not found | Run `espup install`. Scripts source it automatically |
+| `LIBCLANG_PATH` / linker errors | Use `./scripts/build-for-wokwi.sh` or `source ~/export-esp.sh` before `cargo build` |
+| Simulation hangs / boot loop | Click the Wokwi panel; check serial for panic after `NVS initialized` |
+| No `>` prompt | Wait for `Serial command task ready`; click serial monitor input |
+| Motors never spin | Type `motor 2 30` or `joy on` then **E** — motors do not auto-spin on boot |
+| Wrong motor order | Compare labels M1–M4 with [poc-left-header-wiring.md](./poc-left-header-wiring.md) |
+| IMU init failed | Add MPU-6050 (SDA→GPIO14, SCL→GPIO13, VCC→3V3, GND) or ignore for motor-only tests |
 | Multiple motors spin together | Wiring fault in diagram — each GPIO must drive only one MOSFET gate |
+| Joystick keys ignored | Type `joy on` first; use **E/C/W/A/S/D**, not command lines |
 
 ## Optional: Wokwi CLI (CI)
 

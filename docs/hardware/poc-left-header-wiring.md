@@ -81,7 +81,7 @@ Pick a **front** direction on your frame and mount each motor at the matching co
               BACK ↓
 ```
 
-Motor test order in firmware (`M1 → M2 → M3 → M4`) follows **motor index**, not position around the frame clockwise. After the motor test, firmware initializes the MPU-6050 (if present) and streams accel/gyro/tilt at 100 Hz over serial.
+Motor index order in firmware is **M1 → M2 → M3 → M4** (front-right, back-right, back-left, front-left), not necessarily clockwise around the frame. After boot, use the serial REPL to command motors; MPU-6050 data streams only after `imu on` — see [serial-commands.md](./serial-commands.md).
 
 ## Motor driver (per channel)
 
@@ -104,7 +104,7 @@ Each GPIO drives a **low-side N-channel MOSFET** (SI2300-class). Add a **Schottk
 | Gate resistor | 220 Ω (optional) | Between GPIO and gate |
 | Gate pull-down | 10 kΩ | Gate → GND |
 
-**POC bench:** motor **+** from **1S LiPo (~3.8 V)** for the default spin test (firmware targets ~3.2 V average at ~84% PWM). LED-only GPIO checks can use **3.3 V** with no props — see [motor-led-flash-test.md](./motor-led-flash-test.md). **Flight build:** same LiPo supply; ESP32 **GND** common only — do not power motors from the ESP **3V3** pin on a real quad.
+**POC bench:** motor **+** from **1S LiPo (~3.8 V)** for meaningful 8520 thrust when using serial commands or bench tests. LED-only GPIO checks can use **3.3 V** with no props — see [motor-led-flash-test.md](./motor-led-flash-test.md). **Flight build:** same LiPo supply; ESP32 **GND** common only — do not power motors from the ESP **3V3** pin on a real quad.
 
 ## Breadboard wiring diagram
 
