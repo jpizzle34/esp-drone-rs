@@ -52,7 +52,7 @@ Development board used for the Rust firmware POC: dual-core Xtensa ESP32, CP2102
 | Motor M3 | 25 | D25 | LEDC PWM — **back-left** |
 | Motor M4 | 26 | D26 | LEDC PWM — **front-left** |
 
-In Rust firmware, GPIO claiming for this profile is centralized in [`DronePins::take`](../../Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs) (`MotorPins`, `ImuPins`, and status LED are grouped there).
+In Rust firmware, GPIO claiming for this profile goes through [`BoardProfile::take`](../../Firmware/esp-drone-rs/src/board/profile.rs) into [`DronePins`](../../Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs), then [`PeripheralPins::split`](../../Firmware/esp-drone-rs/src/board/profile.rs) into `MotorPins`, `ImuPins`, and the status LED. Each bundle wires via [`MotorWiring`](../../Firmware/esp-drone-rs/src/drivers/motors/wiring.rs) / [`ImuWiring`](../../Firmware/esp-drone-rs/src/drivers/imu/wiring.rs).
 
 ### ESPLANE_V1 (planned — `board-esplane-v1` feature)
 

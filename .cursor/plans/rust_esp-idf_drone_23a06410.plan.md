@@ -7,10 +7,10 @@ todos:
       status: completed
     - id: p1-poc-imu
       content: "Phase 1 POC: I2C MPU6050 read + stream gyro/accel over serial (breadboard wiring)"
-      status: pending
+      status: completed
     - id: p1-poc-motor
       content: "Phase 1 POC: LEDC PWM spin one motor (or LED stand-in) from serial command"
-      status: pending
+      status: completed
     - id: p2-bench-quad
       content: "Phase 2: 4-motor bench prop-test + basic arming gate on POC or ESPLANE pins"
       status: pending
@@ -83,9 +83,9 @@ Firmware/
     Cargo.toml
     src/
       main.rs         # composition root
-      board/          # pin profiles [active]
-      drivers/        # motors [active], imu/power [stub]
-      sensors/        # sample tasks [stub]
+      board/          # BoardProfile + PeripheralPins [active]
+      drivers/        # motors + imu [active], power [stub]
+      sensors/        # IMU stream task [active]
       estimation/     # fusion [stub]
       flight/         # stabilizer, PID, mixer [stub]
       comm/           # serial, CRTP/WiFi [stub]

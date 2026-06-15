@@ -2,7 +2,7 @@
 
 All POC signals are on the **left header** so a breadboard can sit on one side of the board with short jumpers. USB stays at the bottom; **VIN** is **bottom-left**.
 
-Active firmware profile: `POC_LEFT_HEADER` in [`elegoo_esp32_wroom32.rs`](../../Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs). All GPIO claiming for this profile goes through [`DronePins::take`](../../Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs).
+Active firmware profile: `POC_LEFT_HEADER` in [`elegoo_esp32_wroom32.rs`](../../Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs). GPIO is claimed via [`BoardProfile::take`](../../Firmware/esp-drone-rs/src/board/profile.rs) and split with [`PeripheralPins`](../../Firmware/esp-drone-rs/src/board/profile.rs).
 
 ## Left header pin map (POC)
 
@@ -81,7 +81,7 @@ Pick a **front** direction on your frame and mount each motor at the matching co
               BACK ↓
 ```
 
-Motor test order in firmware (`M1 → M2 → M3 → M4`) follows **motor index**, not position around the frame clockwise.
+Motor test order in firmware (`M1 → M2 → M3 → M4`) follows **motor index**, not position around the frame clockwise. After the motor test, firmware initializes the MPU-6050 (if present) and streams accel/gyro/tilt at 100 Hz over serial.
 
 ## Motor driver (per channel)
 

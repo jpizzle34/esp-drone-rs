@@ -1,6 +1,6 @@
 # Wokwi simulation
 
-Simulate the **8520 brushed motor** bench test in [Wokwi](https://wokwi.com/) before flashing the Elegoo board.
+Simulate the **8520 brushed motor** bench test and **MPU-6050 IMU stream** in [Wokwi](https://wokwi.com/) before flashing the Elegoo board.
 
 Files live in [`Firmware/esp-drone-rs/`](../../Firmware/esp-drone-rs/):
 
@@ -40,6 +40,8 @@ MOSFET SOURCE ────────► GND
 | M3 | 25 | D25 | Back-left | `motor_m3` |
 | M4 | 26 | D26 | Front-left | `motor_m4` |
 | Status | 27 | D27 | — | Orange LED + 330 Ω |
+| IMU SDA | 14 | D14 | — | MPU-6050 SDA |
+| IMU SCL | 13 | D13 | — | MPU-6050 SCL |
 
 Motors are custom **`chip-dc-motor`** parts (8520 coreless, 48×48 spinning prop). PWM is **15 kHz LEDC** from firmware — same as hardware.
 
@@ -77,7 +79,8 @@ Matches the firmware `run_bench_test(..., BenchMode::Spin)` in [`drivers/motors/
 2. Orange **D27** — short blink before the test.
 3. **One motor spins at a time** (1 s pulse at ~**84%** PWM / ~3.2 V avg @ 3.8 V supply, 1 s gap), order **M1 → M2 → M3 → M4**.
 4. Orange — two quick blinks, then 500 ms heartbeat.
-5. Serial logs each step, e.g. `Spin 1/4: M1 GPIO32 (D32) — front-right`.
+5. Serial logs each motor step, e.g. `Spin 1/4: M1 GPIO32 (D32) — front-right`.
+6. **MPU-6050** (optional) — after boot, type `imu on` in the serial monitor for 10 Hz tilt/accel lines; `imu off` to stop. Motors: `help`, `motor 2 30`, `stop`.
 
 ## LED-only diagram (optional)
 
@@ -95,6 +98,7 @@ The previous LED-only bench diagram is equivalent for **GPIO verification** — 
 | Simulation hangs / no serial | Click the Wokwi panel; check build succeeded |
 | Motors never spin | Confirm ELF built; check serial for `Motor spin test begin` |
 | Wrong motor order | Compare labels M1–M4 with [`poc-left-header-wiring.md`](./poc-left-header-wiring.md) |
+| IMU init failed | Add MPU-6050 to diagram (SDA→GPIO14, SCL→GPIO13, VCC→3V3, GND→GND) or ignore if testing motors only |
 | Multiple motors spin together | Wiring fault in diagram — each GPIO must drive only one MOSFET gate |
 
 ## Optional: Wokwi CLI (CI)

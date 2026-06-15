@@ -2,7 +2,7 @@
 
 Rust firmware for an ESP32 quadcopter, built on [ESP-IDF](https://docs.espressif.com/projects/esp-idf/) via the [esp-rs](https://github.com/esp-rs) toolchain. This repo is a fork of the [ESP-FLY](https://www.seeedstudio.com/) / ESP-Drone ecosystem; active development is the Rust crate in `Firmware/esp-drone-rs/`. The original C firmware in `Firmware/esp-drone/` is kept for reference only.
 
-**Current firmware:** a motor spin bench test on boot (sequential M1 → M4 PWM), plus a status LED heartbeat. See [docs/hardware/](docs/hardware/) for wiring and expected behaviour.
+**Current firmware:** motor spin bench test on boot (M1 → M4), interactive **serial commands** for motors and IMU, and status LED heartbeat. IMU stream is **off by default** — use `imu on` in the serial monitor. See [docs/hardware/](docs/hardware/) for wiring and commands.
 
 ---
 
@@ -27,13 +27,13 @@ Co-Create_ESP-FLY/          ← clone the repo here (any folder name is fine)
 ├── Firmware/
 │   ├── esp-drone-rs/       ← **Rust firmware — build and flash from here**
 │   │   ├── src/
-│   │   │   ├── main.rs     ← composition root (boot, bench test, idle loop)
-│   │   │   ├── board/      ← pin profiles (Elegoo POC, ESPLANE_V1 stub)
-│   │   │   ├── drivers/    ← hardware drivers (motors active; imu/power stub)
-│   │   │   ├── sensors/    ← sample tasks (stub)
+│   │   │   ├── main.rs     ← composition root (boot, bench test, IMU stream, idle loop)
+│   │   │   ├── board/      ← pin profiles ([`BoardProfile`](Firmware/esp-drone-rs/src/board/profile.rs), [`PeripheralPins`](Firmware/esp-drone-rs/src/board/profile.rs))
+│   │   │   ├── drivers/    ← hardware drivers (motors + IMU active; power stub)
+│   │   │   ├── sensors/    ← IMU sample task (active)
 │   │   │   ├── estimation/ ← attitude fusion (stub)
 │   │   │   ├── flight/     ← stabilizer, PID, mixer (stub)
-│   │   │   ├── comm/       ← serial + CRTP / WiFi (stub)
+│   │   │   ├── comm/       ← serial bench REPL (active)
 │   │   │   └── safety/     ← arming gate, failsafe (stub)
 │   │   ├── .cargo/config.toml
 │   │   ├── rust-toolchain.toml
@@ -217,7 +217,7 @@ cargo run
 
 ### Expected output
 
-After reset, the serial monitor should show a pin map, then a sequential motor spin test (M1 → M2 → M3 → M4), then a blinking status LED. Each motor gets a **1 s** pulse at ~**84%** PWM (~3.2 V average on a **3.8 V** 1S supply), with a **1 s** gap between motors. Example:
+After reset, the serial monitor should show a pin map, then a sequential motor spin test (M1 → M2 → M3 → M4), then IMU init and a 100 Hz sensor stream (if MPU-6050 is wired), then a blinking status LED. Each motor gets a **1 s** pulse at ~**84%** PWM (~3.2 V average on a **3.8 V** 1S supply), with a **1 s** gap between motors. Example:
 
 ```
 I (...) esp_drone_rs: ESP-Drone Rust firmware — motor spin bench test
@@ -226,8 +226,40 @@ W (...) === Motor spin test begin ===
 W (...) 8520 / 3.8 V / 55 mm props — 1000 ms pulse at ~84% PWM (~3.20 V avg), 1000 ms gap
 I (...) Spin 1/4: M1 GPIO32 (D32) — front-right
 ...
+I (...) IMU ready — serial: 'imu on' to stream, 'imu off' to stop
+I (...) Serial command task ready — type 'help'
+Commands:
+  help                 Show this help
+  ...
+> motor 2 30
+OK M2 duty 30%
+> imu on
+OK IMU stream on (10 Hz)
+IMU accel=(+0.01,-0.02,+1.00)g gyro=(+0,+1,-0)°/s tilt roll=+1.2° pitch=-0.5° temp=28.3°C
+> imu off
+OK IMU stream off
+...
 I (...) Idle — status LED heartbeat on D27 / GPIO27
 ```
+
+### Serial commands (after boot bench test)
+
+Type commands in the same monitor used by `./scripts/flash.sh` (115200 baud). A `>` prompt is printed for each command.
+
+| Command | Action |
+|---------|--------|
+| `help` | List commands |
+| `motor <0-100>` | M1 duty percent |
+| `motor <1-4> <0-100>` | Named motor duty percent |
+| `stop` | All motors off |
+| `imu` | IMU stream status |
+| `imu on` | Stream IMU at 10 Hz |
+| `imu on <hz>` | Stream IMU at 1–100 Hz |
+| `imu off` | Stop IMU stream |
+
+IMU data uses plain `println!` lines (no log prefix) only while `imu on` is active, so the monitor stays readable for typing.
+
+If the MPU-6050 is not connected, motor commands still work; `imu` reports not available.
 
 For **LED-only** wiring checks (no motors), see [docs/hardware/motor-led-flash-test.md](docs/hardware/motor-led-flash-test.md) — that mode is not enabled by default.
 
@@ -287,6 +319,7 @@ Recommended extensions (see `Firmware/esp-drone-rs/.vscode/extensions.json`):
 | Wokwi: firmware not found              | Run `./scripts/build-for-wokwi.sh` from `Firmware/esp-drone-rs`                                              |
 | Wokwi: wrong folder                    | Open **`Firmware/esp-drone-rs`**, not the repo root                                                          |
 | Stack overflow / boot loop on device   | Already mitigated in `sdkconfig.defaults`; if it persists, check wiring and serial for panic messages        |
+| IMU init failed / no sensor stream     | Check MPU-6050 on D14 (SDA) and D13 (SCL), 3V3, and GND; I2C address should be `0x68`                        |
 
 More Wokwi-specific issues: [docs/hardware/wokwi-simulation.md](docs/hardware/wokwi-simulation.md).
 
@@ -306,13 +339,14 @@ More Wokwi-specific issues: [docs/hardware/wokwi-simulation.md](docs/hardware/wo
 
 | Module | Status | Role |
 |--------|--------|------|
-| [`board/`](Firmware/esp-drone-rs/src/board/) | Active | Pin profiles — one file per board; [`BoardProfile`](Firmware/esp-drone-rs/src/board/profile.rs) + `DronePins::take` |
-| [`drivers/motors/`](Firmware/esp-drone-rs/src/drivers/motors/) | Active | LEDC PWM, bench tests (`run_bench_test`) |
-| [`drivers/imu/`](Firmware/esp-drone-rs/src/drivers/imu/), [`drivers/power/`](Firmware/esp-drone-rs/src/drivers/power/) | Stub | MPU6050 I2C, battery ADC |
-| [`sensors/`](Firmware/esp-drone-rs/src/sensors/) | Stub | IMU sample tasks |
+| [`board/`](Firmware/esp-drone-rs/src/board/) | Active | [`BoardProfile`](Firmware/esp-drone-rs/src/board/profile.rs) + [`PeripheralPins`](Firmware/esp-drone-rs/src/board/profile.rs); Elegoo POC active, ESPLANE_V1 planned |
+| [`drivers/motors/`](Firmware/esp-drone-rs/src/drivers/motors/) | Active | LEDC PWM, [`MotorWiring`](Firmware/esp-drone-rs/src/drivers/motors/wiring.rs), bench tests (`run_bench_test`) |
+| [`drivers/imu/`](Firmware/esp-drone-rs/src/drivers/imu/) | Active | MPU-6050 I2C, [`ImuWiring`](Firmware/esp-drone-rs/src/drivers/imu/wiring.rs) |
+| [`drivers/power/`](Firmware/esp-drone-rs/src/drivers/power/) | Stub | Battery ADC |
+| [`sensors/`](Firmware/esp-drone-rs/src/sensors/) | Active | IMU stream task (`sensors::start`) |
 | [`estimation/`](Firmware/esp-drone-rs/src/estimation/) | Stub | Attitude fusion |
 | [`flight/`](Firmware/esp-drone-rs/src/flight/) | Stub | 1 kHz stabilizer, PID, X-quad mixer |
-| [`comm/`](Firmware/esp-drone-rs/src/comm/) | Stub | Serial commands, CRTP / WiFi |
+| [`comm/serial`](Firmware/esp-drone-rs/src/comm/serial.rs) | Active | UART bench REPL — motor duty, IMU stream on/off |
 | [`safety/`](Firmware/esp-drone-rs/src/safety/) | Stub | Arming gate, link-loss failsafe |
 
 Pin maps: [`elegoo_esp32_wroom32.rs`](Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs) (active POC), [`esplane_v1.rs`](Firmware/esp-drone-rs/src/board/esplane_v1.rs) (planned production PCB). Module tree is documented in [`drivers/mod.rs`](Firmware/esp-drone-rs/src/drivers/mod.rs).
