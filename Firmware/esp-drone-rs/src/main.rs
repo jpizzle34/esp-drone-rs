@@ -15,12 +15,13 @@ use esp_idf_svc::nvs::EspDefaultNvsPartition;
 
 use board::{ActiveBoard, BoardProfile, PeripheralPins};
 use drivers::motors::MotorWiring;
+use safety::MotorGate;
 
 fn main() -> anyhow::Result<()> {
     esp_idf_svc::sys::link_patches();
     esp_idf_svc::log::EspLogger::initialize_default();
 
-    log::info!("ESP-Drone Rust firmware — serial command mode");
+    log::info!("ESP-Drone Rust firmware — serial command mode (disarmed)");
     ActiveBoard::log_pinout();
 
     let _nvs = EspDefaultNvsPartition::take()?;
@@ -47,8 +48,9 @@ fn main() -> anyhow::Result<()> {
     FreeRtos::delay_ms(200);
 
     let motors = Arc::new(Mutex::new(motors));
+    let gate = MotorGate::new(motors);
     let imu = sensors::init(imu_pins, i2c0)?;
-    let _serial_task = comm::spawn_serial(motors, imu)?;
+    let _serial_task = comm::spawn_serial(gate, imu)?;
 
     for _ in 0..2 {
         status_led.set_high()?;

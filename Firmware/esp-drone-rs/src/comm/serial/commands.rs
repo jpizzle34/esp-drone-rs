@@ -1,10 +1,12 @@
 //! Bench serial command parser and handlers.
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use esp_idf_hal::delay::FreeRtos;
 
-use crate::drivers::motors::{Motor, Motors};
+use crate::board::{ActiveBoard, BoardProfile};
+use crate::drivers::motors::Motor;
+use crate::safety::{DisarmReason, MotorGate};
 use crate::sensors::{ImuService, DEFAULT_STREAM_HZ};
 
 /// Longest allowed `motor pulse` duration (ms).
@@ -13,13 +15,15 @@ const MAX_PULSE_MS: u32 = 30_000;
 const HELP: &str = "\
 Commands:
   help                       Show this help
-  motor <0-100>              Set M1 duty percent
-  motor <1-4> <0-100>        Set motor duty percent
-  motor all <0-100>          Set all motors to same duty percent
-  motor pulse <0-100> <ms>   Run all motors at duty for ms, then stop
-  stop                       All motors off
-  joy on                     Flight stick — E/C throttle, WASD tilt (Q quit)
-  joy off                    Stop motors (use Q if already in joystick mode)
+  arm                        Arm motors (M1→M4 chirp, then output enabled)
+  disarm                     Disarm — all motors off immediately
+  motor <0-100>              Set M1 duty percent (armed only)
+  motor <1-4> <0-100>        Set motor duty percent (armed only)
+  motor all <0-100>          Set all motors to same duty percent (armed only)
+  motor pulse <0-100> <ms>   Run all motors at duty for ms, then stop (armed only)
+  stop                       Same as disarm
+  joy on                     Flight stick — E/C throttle, WASD tilt (armed, Q quit)
+  joy off                    Disarm
   imu                        IMU stream status
   imu on [hz]                Stream IMU (default 10 Hz, max 100 Hz)
   imu off                    Stop IMU stream";
@@ -37,7 +41,7 @@ pub fn print_help() {
 
 pub fn handle_line(
     line: &str,
-    motors: &Arc<Mutex<Motors>>,
+    gate: &Arc<MotorGate>,
     imu: Option<&ImuService>,
 ) -> CommandAction {
     let line = line.trim();
@@ -48,21 +52,32 @@ pub fn handle_line(
     let parts: Vec<&str> = line.split_whitespace().collect();
     let (result, action) = match parts.as_slice() {
         ["help"] | ["?"] => (Ok(HELP.to_string()), CommandAction::None),
-        ["stop"] => (stop_motors(motors), CommandAction::None),
-        ["motor", pct] => (set_motor(motors, Motor::M1, pct), CommandAction::None),
-        ["motor", "all", pct] => (set_all_motors(motors, pct), CommandAction::None),
-        ["motor", "pulse", pct, ms] => (pulse_all_motors(motors, pct, ms), CommandAction::None),
+        ["arm"] => (cmd_arm(gate), CommandAction::None),
+        ["disarm"] => (cmd_disarm(gate, DisarmReason::Command), CommandAction::None),
+        ["stop"] => (cmd_disarm(gate, DisarmReason::Stop), CommandAction::None),
+        ["motor", pct] => (set_motor(gate, Motor::M1, pct), CommandAction::None),
+        ["motor", "all", pct] => (set_all_motors(gate, pct), CommandAction::None),
+        ["motor", "pulse", pct, ms] => (pulse_all_motors(gate, pct, ms), CommandAction::None),
         ["motor", idx, pct] if *idx != "all" && *idx != "pulse" => {
             match parse_motor_index(idx) {
-                Ok(motor) => (set_motor(motors, motor, pct), CommandAction::None),
+                Ok(motor) => (set_motor(gate, motor, pct), CommandAction::None),
                 Err(msg) => (Err(msg), CommandAction::None),
             }
         }
-        ["joy", "on"] => (
-            Ok("entering joystick mode".to_string()),
-            CommandAction::EnterJoystick,
-        ),
-        ["joy", "off"] => (stop_motors(motors), CommandAction::None),
+        ["joy", "on"] => {
+            if gate.is_armed() {
+                (
+                    Ok("entering joystick mode".to_string()),
+                    CommandAction::EnterJoystick,
+                )
+            } else {
+                (
+                    Err("disarmed — type 'arm' first".to_string()),
+                    CommandAction::None,
+                )
+            }
+        }
+        ["joy", "off"] => (cmd_disarm(gate, DisarmReason::Command), CommandAction::None),
         ["imu"] => (Ok(imu_status(imu)), CommandAction::None),
         ["imu", "on"] => (imu_set_stream(imu, true, None), CommandAction::None),
         ["imu", "on", hz] => match parse_hz(hz) {
@@ -88,54 +103,35 @@ pub fn handle_line(
     action
 }
 
-fn stop_motors(motors: &Arc<Mutex<Motors>>) -> Result<String, String> {
-    let mut motors = motors.lock().map_err(|_| "motor mutex poisoned".to_string())?;
-    motors
-        .all_off()
-        .map_err(|err| format!("stop failed: {err:#}"))?;
-    Ok("OK all motors stopped".to_string())
+fn cmd_arm(gate: &Arc<MotorGate>) -> Result<String, String> {
+    gate.arm(ActiveBoard::motor_table())?;
+    Ok("OK armed — motor output enabled".to_string())
 }
 
-fn set_motor(motors: &Arc<Mutex<Motors>>, motor: Motor, pct: &str) -> Result<String, String> {
-    let percent = parse_percent(pct)?;
-    let mut motors = motors.lock().map_err(|_| "motor mutex poisoned".to_string())?;
-    motors
-        .set_duty_percent(motor, percent)
-        .map_err(|err| format!("motor set failed: {err:#}"))?;
-    Ok(format!(
-        "OK {} duty {}%",
-        motor.name(),
-        percent
-    ))
+fn cmd_disarm(gate: &Arc<MotorGate>, reason: DisarmReason) -> Result<String, String> {
+    gate.disarm(reason)?;
+    Ok("OK disarmed — all motors off".to_string())
 }
 
-fn set_all_motors(motors: &Arc<Mutex<Motors>>, pct: &str) -> Result<String, String> {
+fn set_motor(gate: &Arc<MotorGate>, motor: Motor, pct: &str) -> Result<String, String> {
     let percent = parse_percent(pct)?;
-    let mut motors = motors.lock().map_err(|_| "motor mutex poisoned".to_string())?;
-    motors
-        .set_all_duty_percent(percent)
-        .map_err(|err| format!("motor set failed: {err:#}"))?;
+    gate.set_duty_percent(motor, percent)?;
+    Ok(format!("OK {} duty {}%", motor.name(), percent))
+}
+
+fn set_all_motors(gate: &Arc<MotorGate>, pct: &str) -> Result<String, String> {
+    let percent = parse_percent(pct)?;
+    gate.set_all_duty_percent(percent)?;
     Ok(format!("OK all motors duty {percent}%"))
 }
 
-fn pulse_all_motors(
-    motors: &Arc<Mutex<Motors>>,
-    pct: &str,
-    ms: &str,
-) -> Result<String, String> {
+fn pulse_all_motors(gate: &Arc<MotorGate>, pct: &str, ms: &str) -> Result<String, String> {
     let percent = parse_percent(pct)?;
     let duration_ms = parse_duration_ms(ms)?;
-    let mut motors = motors.lock().map_err(|_| "motor mutex poisoned".to_string())?;
-    motors
-        .set_all_duty_percent(percent)
-        .map_err(|err| format!("motor pulse failed: {err:#}"))?;
+    gate.set_all_duty_percent(percent)?;
     FreeRtos::delay_ms(duration_ms);
-    motors
-        .all_off()
-        .map_err(|err| format!("motor stop failed: {err:#}"))?;
-    Ok(format!(
-        "OK all motors {percent}% for {duration_ms} ms"
-    ))
+    gate.stop_output()?;
+    Ok(format!("OK all motors {percent}% for {duration_ms} ms"))
 }
 
 fn imu_status(imu: Option<&ImuService>) -> String {

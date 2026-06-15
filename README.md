@@ -2,7 +2,7 @@
 
 Rust firmware for an ESP32 quadcopter, built on [ESP-IDF](https://docs.espressif.com/projects/esp-idf/) via the [esp-rs](https://github.com/esp-rs) toolchain. This repo is a fork of the [ESP-FLY](https://www.seeedstudio.com/) / ESP-Drone ecosystem; active development is the Rust crate in `Firmware/esp-drone-rs/`. The original C firmware in `Firmware/esp-drone/` is kept for reference only.
 
-**Current firmware:** boots to an interactive **serial REPL** (motors off until commanded), **joystick mode** (`joy on`), IMU ready with stream **off by default**, and status LED heartbeat on D27. Full command reference: [docs/hardware/serial-commands.md](docs/hardware/serial-commands.md). Wiring: [docs/hardware/](docs/hardware/).
+**Current firmware:** boots **disarmed** to a serial REPL, **arming gate** (`arm` / `disarm`), joystick mode (`joy on` when armed), IMU ready with stream **off by default**, status LED on D27. Commands: [docs/hardware/serial-commands.md](docs/hardware/serial-commands.md).
 
 ---
 
@@ -34,7 +34,7 @@ Co-Create_ESP-FLY/          ← clone the repo here (any folder name is fine)
 │   │   │   ├── estimation/ ← attitude fusion (stub)
 │   │   │   ├── flight/     ← stabilizer, PID, mixer (stub)
 │   │   │   ├── comm/       ← serial REPL + joystick mode (active)
-│   │   │   └── safety/     ← arming gate, failsafe (stub)
+│   │   │   └── safety/     ← arming gate, MotorGate (active)
 │   │   ├── .cargo/config.toml
 │   │   ├── rust-toolchain.toml
 │   │   ├── Cargo.toml
@@ -217,25 +217,23 @@ cargo run
 
 ### Expected output
 
-After reset, the serial monitor should show a pin map, peripheral init, IMU ready (if MPU-6050 is wired), the serial REPL banner, then a blinking status LED. Motors stay **off** until you send a command. Example:
+After reset, the serial monitor should show a pin map, peripheral init, IMU ready (if wired), and the serial REPL (**disarmed**). Motors stay off until `arm`. Example:
 
 ```
-I (...) esp_drone_rs: ESP-Drone Rust firmware — serial command mode
-I (...) Motor M1: GPIO32 (D32, front-right) — LEDC PWM
+I (...) esp_drone_rs: ESP-Drone Rust firmware — serial command mode (disarmed)
 ...
-I (...) IMU ready — serial: 'imu on' to stream, 'imu off' to stop
-I (...) Serial command task ready — type 'help'
+I (...) Serial command task ready — disarmed; type 'help'
 Commands:
   help                       Show this help
-  motor <0-100>              Set M1 duty percent
-  ...
-  joy on                     Flight stick — E/C throttle, WASD tilt (Q quit)
+  arm                        Arm motors (M1→M4 chirp, then output enabled)
+  disarm                     Disarm — all motors off immediately
   ...
 > motor 2 30
+ERR disarmed — type 'arm' first
+> arm
+OK armed — motor output enabled
+> motor 2 30
 OK M2 duty 30%
-> joy on
-OK joystick mode — E/C throttle, WASD tilt, Space stop, Q quit
-thr 0%
 > imu on
 OK IMU stream on (10 Hz)
 IMU accel=(+0.01,-0.02,+1.00)g gyro=(+0,+1,-0)°/s tilt roll=+1.2° pitch=-0.5° temp=28.3°C
@@ -254,25 +252,20 @@ Type commands in the same monitor used by `./scripts/flash.sh` (**115200 baud**)
 | Command | Action |
 |---------|--------|
 | `help` | List commands |
-| `motor <0-100>` | M1 duty percent |
-| `motor <1-4> <0-100>` | Named motor duty percent |
-| `motor all <0-100>` | All motors same duty |
-| `motor pulse <0-100> <ms>` | All motors for fixed time, then stop |
-| `stop` | All motors off |
-| `joy on` | Joystick mode — **E/C** throttle, **WASD** pitch/roll, **Q** quit |
-| `joy off` | All motors off (command mode) |
-| `imu` | IMU stream status |
-| `imu on` | Stream IMU at 10 Hz |
-| `imu on <hz>` | Stream IMU at 1–100 Hz |
-| `imu off` | Stop IMU stream |
+| `arm` | Arm motors (M1→M4 chirp, then output enabled) |
+| `disarm` / `stop` | Disarm — all motors off immediately |
+| `motor …` | Per-motor / all / pulse duty (**armed only**) |
+| `joy on` | Joystick — **E/C** + **WASD** (**armed**; **Q** disarm) |
+| `joy off` | Disarm |
+| `imu` / `imu on` / `imu off` | IMU stream control |
 
 IMU data uses plain `println!` lines (no log prefix) only while `imu on` is active, so the monitor stays readable for typing.
 
-If the MPU-6050 is not connected, motor commands still work; `imu` reports not available.
+If the MPU-6050 is not connected, motor commands still work when armed; `imu` reports not available.
 
-For **LED-only** GPIO checks or **sequential** bench tests, see [docs/hardware/motor-led-flash-test.md](docs/hardware/motor-led-flash-test.md).
+For **LED-only** GPIO checks or longer bench sequences, see [docs/hardware/motor-led-flash-test.md](docs/hardware/motor-led-flash-test.md).
 
-**Safety:** props can spin as soon as you command motors — hold the frame down on hardware. An arming gate is planned but not implemented yet.
+**Safety:** motors are **disarmed at boot** — type `arm` before spin tests; `disarm` or `stop` kills PWM immediately. Hold the frame down on hardware.
 
 Press **Ctrl+C** to exit the monitor. Press **RST** on the board to reboot into the idle REPL (motors off).
 
@@ -357,7 +350,7 @@ More Wokwi-specific issues: [docs/hardware/wokwi-simulation.md](docs/hardware/wo
 | [`estimation/`](Firmware/esp-drone-rs/src/estimation/) | Stub | Attitude fusion |
 | [`flight/`](Firmware/esp-drone-rs/src/flight/) | Stub | 1 kHz stabilizer, PID, X-quad mixer |
 | [`comm/serial`](Firmware/esp-drone-rs/src/comm/serial.rs) | Active | UART REPL — motor duty, `joy on` stick, IMU stream on/off |
-| [`safety/`](Firmware/esp-drone-rs/src/safety/) | Stub | Arming gate, link-loss failsafe |
+| [`safety/`](Firmware/esp-drone-rs/src/safety/) | Active | [`MotorGate`](Firmware/esp-drone-rs/src/safety/motor_gate.rs) arming — disarmed by default |
 
 Pin maps: [`elegoo_esp32_wroom32.rs`](Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs) (active POC), [`esplane_v1.rs`](Firmware/esp-drone-rs/src/board/esplane_v1.rs) (planned production PCB). Module tree is documented in [`drivers/mod.rs`](Firmware/esp-drone-rs/src/drivers/mod.rs).
 

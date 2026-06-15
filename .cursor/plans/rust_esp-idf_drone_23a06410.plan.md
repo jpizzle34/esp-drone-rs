@@ -13,7 +13,7 @@ todos:
       status: completed
     - id: p2-bench-quad
       content: "Phase 2: 4-motor bench prop-test + basic arming gate on POC or ESPLANE pins"
-      status: pending
+      status: completed
     - id: p3-fly-mvp
       content: "Phase 3 MVP: complementary fusion + PID + 1kHz stabilizer — tethered hover via serial setpoints"
       status: pending

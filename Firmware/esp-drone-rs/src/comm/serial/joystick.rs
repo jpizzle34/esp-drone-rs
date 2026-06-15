@@ -1,11 +1,9 @@
-//! WASD + EC flight stick — active only after `joy on` (see [`super::serial`] input modes).
-//!
-//! X-quad layout: M1 front-right, M2 back-right, M3 back-left, M4 front-left.
+//! WASD + EC flight stick — active only after `joy on` when armed.
 
 use std::io::Write;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
-use crate::drivers::motors::{Motor, Motors};
+use crate::safety::{DisarmReason, MotorGate};
 
 /// Stick / throttle change per keypress (%).
 const AXIS_STEP: i32 = 5;
@@ -18,8 +16,8 @@ Joystick mode (command mode suspended):
   E / C       Throttle up / down
   W / S       Pitch forward / back
   A / D       Roll left / right
-  Space       Reset — all axes 0, motors off
-  Q           Quit — return to command prompt
+  Space       Reset stick axes, motors off (stay armed)
+  Q           Quit joystick and disarm
   ?           Show this help";
 
 pub struct FlightStick {
@@ -43,7 +41,7 @@ impl FlightStick {
     }
 
     pub fn print_enter_banner() {
-        reply("OK joystick mode — E/C throttle, WASD tilt, Space stop, Q quit");
+        reply("OK joystick mode — E/C throttle, WASD tilt, Space stop, Q disarm");
         reply(HELP);
         Self::print_status(0, 0, 0, [0; 4]);
     }
@@ -52,7 +50,7 @@ impl FlightStick {
         reply("OK command mode — type 'help'");
     }
 
-    pub fn handle_key(&mut self, byte: u8, motors: &Arc<Mutex<Motors>>) -> KeyResult {
+    pub fn handle_key(&mut self, byte: u8, gate: &Arc<MotorGate>) -> KeyResult {
         let changed = match byte {
             b'e' | b'E' => self.bump_throttle(AXIS_STEP as u32, false),
             b'c' | b'C' => self.bump_throttle(AXIS_STEP as u32, true),
@@ -62,13 +60,13 @@ impl FlightStick {
             b'd' | b'D' => Self::bump_value(&mut self.roll, AXIS_STEP),
             b' ' => {
                 self.reset();
-                self.apply(motors);
+                let _ = gate.stop_output();
                 Self::print_status(self.throttle, self.pitch, self.roll, self.mix());
                 true
             }
             b'q' | b'Q' => {
                 self.reset();
-                let _ = motors.lock().map(|mut m| m.all_off());
+                let _ = gate.disarm(DisarmReason::JoyQuit);
                 return KeyResult::Quit;
             }
             b'?' => {
@@ -80,8 +78,10 @@ impl FlightStick {
         };
 
         if changed {
-            self.apply(motors);
-            Self::print_status(self.throttle, self.pitch, self.roll, self.mix());
+            match gate.apply_duty_percents(self.mix()) {
+                Ok(()) => Self::print_status(self.throttle, self.pitch, self.roll, self.mix()),
+                Err(err) => reply(&format!("ERR {err}")),
+            }
         }
 
         KeyResult::Continue
@@ -119,21 +119,12 @@ impl FlightStick {
     fn mix(&self) -> [u32; 4] {
         let base = self.throttle as i32;
         let duties = [
-            base - self.pitch + self.roll, // M1 front-right
-            base + self.pitch + self.roll, // M2 back-right
-            base + self.pitch - self.roll, // M3 back-left
-            base - self.pitch - self.roll, // M4 front-left
+            base - self.pitch + self.roll,
+            base + self.pitch + self.roll,
+            base + self.pitch - self.roll,
+            base - self.pitch - self.roll,
         ];
         duties.map(clamp_duty)
-    }
-
-    fn apply(&self, motors: &Arc<Mutex<Motors>>) {
-        let duties = self.mix();
-        if let Ok(mut motors) = motors.lock() {
-            for (motor, &duty) in Motor::ALL.iter().zip(duties.iter()) {
-                let _ = motors.set_duty_percent(*motor, duty);
-            }
-        }
     }
 
     fn print_status(throttle: u32, pitch: i32, roll: i32, duties: [u32; 4]) {

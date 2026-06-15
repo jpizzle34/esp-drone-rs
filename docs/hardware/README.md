@@ -2,7 +2,7 @@
 
 Pinout and wiring for the Rust firmware (`Firmware/esp-drone-rs/`).
 
-**Default boot behaviour:** motors **off**, **serial REPL** at `>` (`help`, `motor`, `joy on`, `imu on/off`). IMU stream is off until `imu on`. Status LED heartbeat on D27. Command reference: [serial-commands.md](./serial-commands.md) and [README § Serial commands](../../README.md#serial-commands).
+**Default boot behaviour:** **disarmed** serial REPL (`arm` / `disarm`, `motor`, `joy on` when armed, `imu on/off`). See [serial-commands.md](./serial-commands.md).
 
 | Document | Description |
 |----------|-------------|
@@ -35,8 +35,8 @@ src/
 ├── sensors/          IMU sample task (sensors::init) [active]
 ├── estimation/       attitude fusion [stub]
 ├── flight/           stabilizer, PID, mixer [stub]
-├── comm/             serial REPL + joystick mode [active]
-└── safety/           arming gate, failsafe [stub]
+├── comm/             serial REPL + joystick [active]
+└── safety/           MotorGate arming [active]
 ```
 
 **Board pin maps**
@@ -44,4 +44,4 @@ src/
 - **POC (active):** [`elegoo_esp32_wroom32.rs`](../../Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs) — `POC_LEFT_HEADER` metadata; GPIO claimed via [`BoardProfile::take`](../../Firmware/esp-drone-rs/src/board/profile.rs) → [`PeripheralPins::split`](../../Firmware/esp-drone-rs/src/board/profile.rs)
 - **ESPLANE_V1 (planned):** [`esplane_v1.rs`](../../Firmware/esp-drone-rs/src/board/esplane_v1.rs) — GPIO constants; full [`BoardProfile`](../../Firmware/esp-drone-rs/src/board/profile.rs) not implemented yet
 
-**Boot sequence:** init motors (off) + IMU → [`comm/serial.rs`](../../Firmware/esp-drone-rs/src/comm/serial.rs) (interactive commands) + [`sensors/imu.rs`](../../Firmware/esp-drone-rs/src/sensors/imu.rs) (stream off until `imu on`) → status LED heartbeat.
+**Boot sequence:** init motors (off, disarmed) + IMU → serial REPL → status LED heartbeat. All PWM via [`safety/motor_gate.rs`](../../Firmware/esp-drone-rs/src/safety/motor_gate.rs).

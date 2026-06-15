@@ -9,3 +9,7 @@
 //! All motor output paths should pass through the arming gate before reaching [`crate::drivers::motors::Motors`].
 
 mod arming;
+mod motor_gate;
+
+pub use arming::DisarmReason;
+pub use motor_gate::MotorGate;

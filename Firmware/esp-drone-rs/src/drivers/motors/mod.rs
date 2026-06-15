@@ -10,6 +10,7 @@ mod wiring;
 use esp_idf_hal::ledc::{LedcDriver, LedcTimerDriver, LowSpeed};
 use esp_idf_hal::units::Hertz;
 
+pub use bench::run_arm_chirp;
 pub use meta::{
     assert_gpio_order, assert_slot_order, assert_table_gpio_order, build_table, MotorMeta,
     MotorPinMeta,

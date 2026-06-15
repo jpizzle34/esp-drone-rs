@@ -2,7 +2,7 @@
 //!
 //! Not run on boot; invoke [`run_bench_test`] manually or add a serial command if needed.
 
-#![allow(dead_code)]
+#![allow(dead_code)] // `run_bench_test` kept for optional wiring checks
 
 use esp_idf_hal::delay::FreeRtos;
 
@@ -37,6 +37,18 @@ const SPIN_DUTY_NUMERATOR: u32 = 32;
 const SPIN_DUTY_DENOMINATOR: u32 = 38;
 const SPIN_ON_MS: u32 = 1000;
 const SPIN_GAP_MS: u32 = 1000;
+
+// ---------------------------------------------------------------------------
+// Arm chirp — brief M1→M4 twitch on `arm` (~30 % PWM, 150 ms on / 100 ms gap).
+// ---------------------------------------------------------------------------
+const ARM_CHIRP_CONFIG: SequentialConfig = SequentialConfig {
+    step_label: "Arm",
+    duty_num: LED_TEST_DUTY_NUMERATOR,
+    duty_den: LED_TEST_DUTY_DENOMINATOR,
+    on_ms: 150,
+    gap_ms: 100,
+    prelude_delay_ms: 0,
+};
 
 struct SequentialConfig {
     step_label: &'static str,
@@ -86,6 +98,12 @@ pub fn run_bench_test(
         }
     }
     Ok(())
+}
+
+/// Short per-motor chirp when arming (wiring check before flight commands).
+pub fn run_arm_chirp(motors: &mut Motors, table: &[MotorMeta]) -> anyhow::Result<()> {
+    log::info!("=== Arm chirp M1 → M4 ===");
+    run_sequential(motors, table, &ARM_CHIRP_CONFIG)
 }
 
 fn log_led_preamble() {

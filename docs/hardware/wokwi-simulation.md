@@ -81,10 +81,11 @@ Keep the Wokwi tab focused so the simulation keeps running.
 3. `Serial command task ready — type 'help'` and `>` prompt. **Motors stay off** until commanded.
 4. Orange — two quick blinks, then 500 ms heartbeat.
 5. In the Wokwi serial monitor, try:
-   - `motor 2 30` — one motor spins
-   - `motor all 25` — all four spin
-   - `joy on` then **E** / **W** / **A** — throttle + X-quad mix (**Q** to quit)
-   - `imu on` / `imu off` — MPU-6050 stream (if wired in diagram)
+   - `arm` — M1→M4 chirp, then armed
+   - `motor 2 30` — one motor (requires armed)
+   - `joy on` then **E** / **W** / **A** — mix (**Q** disarm)
+   - `disarm` — instant all-off
+   - `imu on` / `imu off` — MPU-6050 stream
 
 Full command list: [serial-commands.md](./serial-commands.md).
 
@@ -104,7 +105,7 @@ Replace `chip-dc-motor` + MOSFET chains with LED + 330 Ω to GND on each motor p
 | `LIBCLANG_PATH` / linker errors | Use `./scripts/build-for-wokwi.sh` or `source ~/export-esp.sh` before `cargo build` |
 | Simulation hangs / boot loop | Click the Wokwi panel; check serial for panic after `NVS initialized` |
 | No `>` prompt | Wait for `Serial command task ready`; click serial monitor input |
-| Motors never spin | Type `motor 2 30` or `joy on` then **E** — motors do not auto-spin on boot |
+| Motors never spin | Type `arm` first, then `motor 2 30` or `joy on` |
 | Wrong motor order | Compare labels M1–M4 with [poc-left-header-wiring.md](./poc-left-header-wiring.md) |
 | IMU init failed | Add MPU-6050 (SDA→GPIO14, SCL→GPIO13, VCC→3V3, GND) or ignore for motor-only tests |
 | Multiple motors spin together | Wiring fault in diagram — each GPIO must drive only one MOSFET gate |
