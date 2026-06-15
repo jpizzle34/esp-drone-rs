@@ -4,3 +4,5 @@
 //! and the shared state handed to [`crate::estimation`].
 
 mod imu;
+
+pub use imu::{init, ImuService, DEFAULT_STREAM_HZ};

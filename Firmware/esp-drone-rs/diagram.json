@@ -212,6 +212,20 @@
       "attrs": { "text": "M4 FL · D26 · GPIO26" }
     },
     {
+      "type": "wokwi-mpu6050",
+      "id": "imu",
+      "top": 580,
+      "left": 320,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-text",
+      "id": "lbl_imu",
+      "top": 560,
+      "left": 320,
+      "attrs": { "text": "MPU6050 · SDA D14 · SCL D13" }
+    },
+    {
       "type": "wokwi-led",
       "id": "led_status",
       "top": 580,
@@ -281,7 +295,12 @@
 
     ["esp:27", "led_status:A", "orange", ["h0"]],
     ["led_status:C", "r_status:1", "black", []],
-    ["r_status:2", "esp:GND.2", "black", []]
+    ["r_status:2", "esp:GND.2", "black", []],
+
+    ["esp:14", "imu:SDA", "green", ["h0"]],
+    ["esp:13", "imu:SCL", "yellow", ["h0"]],
+    ["esp:3V3", "imu:VCC", "red", ["h0"]],
+    ["esp:GND.2", "imu:GND", "black", ["h0"]]
   ],
   "serialMonitor": {
     "display": "terminal",

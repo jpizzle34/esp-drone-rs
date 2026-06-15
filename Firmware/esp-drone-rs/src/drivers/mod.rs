@@ -4,14 +4,14 @@
 //! drivers/
 //!   mod.rs          — this file; re-exports active drivers
 //!   motors/         — brushed motor PWM (LEDC), bench tests  [active]
-//!   imu/            — MPU6050 I2C                            [stub]
+//!   imu/            — MPU6050 I2C + [`ImuWiring`]                 [active]
 //!   power/          — battery voltage / current                [stub]
 //!
 //! Higher layers (not drivers):
-//!   sensors/        — sample tasks, calibration
+//!   sensors/        — sample tasks, calibration [active: IMU stream]
 //!   estimation/     — attitude fusion
 //!   flight/         — stabilizer, PID, mixer
-//!   comm/           — serial + CRTP / WiFi
+//!   comm/           — serial bench REPL [active]; CRTP / WiFi [stub]
 //!   safety/         — arming gate, failsafe
 //! ```
 

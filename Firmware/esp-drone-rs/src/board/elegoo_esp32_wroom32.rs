@@ -8,7 +8,8 @@
 use esp_idf_hal::gpio::{Gpio13, Gpio14, Gpio25, Gpio26, Gpio27, Gpio32, Gpio33, Pins};
 use esp_idf_hal::ledc::{config::TimerConfig, LedcDriver, LedcTimerDriver, LEDC};
 
-use crate::board::profile::{BoardPin, BoardProfile, HasMotorPins};
+use crate::board::profile::{BoardPin, BoardProfile, PeripheralPins};
+use crate::drivers::imu::{wire_i2c_bus, ImuWiring, Mpu6050, DEFAULT_ADDR};
 use crate::drivers::motors::{
     assert_gpio_order, assert_slot_order, assert_table_gpio_order, build_table, MotorMeta,
     MotorPinMeta, Motors, MotorWiring,
@@ -90,8 +91,7 @@ impl MotorWiring for MotorPins {
     }
 }
 
-/// MPU-6050 I2C — reserved for future sensor bring-up.
-#[allow(dead_code)]
+/// MPU-6050 I2C on D14 (SDA) / D13 (SCL).
 pub struct ImuPins {
     pub sda: Gpio14<'static>,
     pub scl: Gpio13<'static>,
@@ -102,8 +102,6 @@ pub struct DronePins {
     /// External status LED + resistor on D27 / GPIO27 (onboard LED is GPIO2).
     pub status_led: Gpio27<'static>,
     pub motors: MotorPins,
-    /// MPU-6050 I2C — reserved for future sensor bring-up.
-    #[allow(dead_code)]
     pub imu: ImuPins,
 }
 
@@ -125,17 +123,25 @@ impl DronePins {
     }
 }
 
-impl HasMotorPins for DronePins {
+impl ImuWiring for ImuPins {
+    fn wire<I2C: esp_idf_hal::i2c::I2c + 'static>(self, i2c: I2C) -> anyhow::Result<Mpu6050<'static>> {
+        let i2c = wire_i2c_bus(i2c, self.sda, self.scl)?;
+        Ok(Mpu6050::new(i2c, DEFAULT_ADDR))
+    }
+}
+
+impl PeripheralPins for DronePins {
     type MotorPins = MotorPins;
     type StatusLedPin = Gpio27<'static>;
+    type ImuPins = ImuPins;
 
-    fn split(self) -> (Gpio27<'static>, MotorPins) {
-        (self.status_led, self.motors)
+    fn split(self) -> (Gpio27<'static>, MotorPins, ImuPins) {
+        (self.status_led, self.motors, self.imu)
     }
 }
 
 impl BoardProfile for ElegooPoc {
-    type DronePins = DronePins;
+    type Pins = DronePins;
 
     const BOARD_NAME: &'static str = "Elegoo ESP32-WROOM-32";
     const PIN_PROFILE: &'static str = "POC_LEFT_HEADER";

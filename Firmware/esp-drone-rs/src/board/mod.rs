@@ -28,4 +28,12 @@ pub use elegoo_esp32_wroom32::ElegooPoc as ActiveBoard;
 #[cfg(feature = "board-esplane-v1")]
 pub use esplane_v1::EsplaneV1 as ActiveBoard;
 
-pub use profile::{BoardProfile, HasMotorPins};
+pub use profile::{BoardProfile, PeripheralPins};
+
+/// Claimed pin bundle for the active board profile.
+#[allow(dead_code)] // convenience alias for board-specific modules and tests
+pub type ActivePins = <ActiveBoard as BoardProfile>::Pins;
+
+/// IMU pin bundle for the active board profile.
+#[allow(dead_code)] // convenience alias for board-specific modules and tests
+pub type ActiveImuPins = <ActivePins as PeripheralPins>::ImuPins;

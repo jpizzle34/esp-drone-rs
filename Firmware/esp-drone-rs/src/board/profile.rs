@@ -5,6 +5,7 @@
 
 use esp_idf_hal::gpio::Pins;
 
+use crate::drivers::imu::ImuWiring;
 use crate::drivers::motors::{MotorMeta, MotorPinMeta, MotorWiring};
 
 /// GPIO number + devkit header label for logs and bench wiring.
@@ -14,17 +15,18 @@ pub struct BoardPin {
     pub header: &'static str,
 }
 
-/// Typed pin bundle returned by a board profile's claim entry point.
-pub trait HasMotorPins {
-    type MotorPins: MotorWiring;
+/// Claimed GPIO bundle split into role-specific pin groups.
+pub trait PeripheralPins {
     type StatusLedPin;
+    type MotorPins: MotorWiring;
+    type ImuPins: ImuWiring;
 
-    fn split(self) -> (Self::StatusLedPin, Self::MotorPins);
+    fn split(self) -> (Self::StatusLedPin, Self::MotorPins, Self::ImuPins);
 }
 
 /// Hardware pin map for one board + wiring profile.
 pub trait BoardProfile {
-    type DronePins: HasMotorPins;
+    type Pins: PeripheralPins;
 
     const BOARD_NAME: &'static str;
     const PIN_PROFILE: &'static str;
@@ -32,7 +34,7 @@ pub trait BoardProfile {
     /// GPIO numbers for M1→M4 in LEDC ch0→ch3 wiring order.
     const MOTOR_GPIO_ORDER: [u8; 4];
 
-    fn take(pins: Pins) -> Self::DronePins;
+    fn take(pins: Pins) -> Self::Pins;
     fn status_led() -> BoardPin;
     fn imu_i2c() -> (BoardPin, BoardPin);
     #[allow(dead_code)] // part of the board contract; used when adding new profiles

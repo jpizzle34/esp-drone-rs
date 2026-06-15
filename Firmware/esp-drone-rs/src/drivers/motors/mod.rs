@@ -10,7 +10,6 @@ mod wiring;
 use esp_idf_hal::ledc::{LedcDriver, LedcTimerDriver, LowSpeed};
 use esp_idf_hal::units::Hertz;
 
-pub use bench::{run_bench_test, BenchMode};
 pub use meta::{
     assert_gpio_order, assert_slot_order, assert_table_gpio_order, build_table, MotorMeta,
     MotorPinMeta,
@@ -60,6 +59,19 @@ impl Motors {
 
     pub fn set_duty(&mut self, motor: Motor, duty: u32) -> anyhow::Result<()> {
         self.drivers[motor.as_usize()].set_duty(duty)?;
+        Ok(())
+    }
+
+    pub fn set_duty_percent(&mut self, motor: Motor, percent: u32) -> anyhow::Result<()> {
+        let percent = percent.min(100);
+        self.set_duty(motor, self.duty_percent(percent, 100))
+    }
+
+    pub fn set_all_duty_percent(&mut self, percent: u32) -> anyhow::Result<()> {
+        let duty = self.duty_percent(percent.min(100), 100);
+        for motor in Motor::ALL {
+            self.set_duty(motor, duty)?;
+        }
         Ok(())
     }
 

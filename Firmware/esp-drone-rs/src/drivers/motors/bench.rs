@@ -1,4 +1,8 @@
 //! Sequential motor bench tests — wiring check (LED) and per-motor spin.
+//!
+//! Not run on boot; invoke [`run_bench_test`] manually or add a serial command if needed.
+
+#![allow(dead_code)]
 
 use esp_idf_hal::delay::FreeRtos;
 
