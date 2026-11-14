@@ -1,6 +1,7 @@
-// Digital N-channel MOSFET (low-side switch) for Wokwi.
-// Matches ESP-Drone / ESP-FLY SI2300-style motor drivers:
-// gate HIGH → drain pulled to source (GND); gate LOW → drain high-Z.
+// Si2300DS N-channel MOSFET, low-side switch for Wokwi.
+// GPIO drives the gate directly. Gate HIGH pulls the drain to the source
+// (GND); gate LOW releases the drain so the motor winding pulls it high.
+// Digital stand-in: Wokwi pins are HIGH/LOW, so this does not model RDS(on).
 
 #include "wokwi-api.h"
 #include <stdio.h>

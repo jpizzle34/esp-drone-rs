@@ -11,10 +11,11 @@ Pinout and wiring for the Rust firmware (`Firmware/esp-drone-rs/`).
 | [poc-left-header-wiring.md](./poc-left-header-wiring.md) | **Active POC** — all signals on the left header |
 | [wokwi-simulation.md](./wokwi-simulation.md) | **Wokwi** — simulate motors + MPU-6050 in VS Code |
 | [motor-led-flash-test.md](./motor-led-flash-test.md) | **Optional** — LED GPIO checks and sequential bench tests |
+| [IMU live dashboard](../../tools/imu-dashboard/README.md) | Browser graphs for the serial IMU stream (`tools/imu-dashboard`) |
 
 ## Build and flash
 
-All Rust commands run from **`Firmware/esp-drone-rs/`**. Helper scripts in `scripts/` source the ESP toolchain automatically — see the [README](../../README.md#helper-scripts).
+All Rust commands run from **`Firmware/esp-drone-rs/`**. `cargo build` / `cargo run` and the helper scripts in `scripts/` load the ESP toolchain automatically — see the [README](../../README.md#helper-scripts).
 
 ```bash
 cd Firmware/esp-drone-rs
@@ -32,8 +33,8 @@ src/
 │   ├── motors/       LEDC PWM + MotorWiring + optional bench tests [active]
 │   ├── imu/          MPU6050 I2C + ImuWiring [active]
 │   └── power/        battery ADC [stub]
-├── sensors/          IMU sample task (sensors::init) [active]
-├── estimation/       attitude fusion [stub]
+├── sensors/          IMU sample task, gyro bias (sensors::init) [active]
+├── estimation/       Mahony attitude [active]
 ├── flight/           stabilizer, PID, mixer [stub]
 ├── comm/             serial REPL + joystick [active]
 └── safety/           MotorGate arming [active]

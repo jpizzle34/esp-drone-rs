@@ -18,6 +18,7 @@ use esp_idf_hal::delay::FreeRtos;
 use commands::CommandAction;
 use joystick::{FlightStick, KeyResult};
 
+use crate::flight::AttitudeService;
 use crate::safety::MotorGate;
 use crate::sensors::ImuService;
 
@@ -33,6 +34,7 @@ enum InputMode {
 pub fn spawn(
     gate: Arc<MotorGate>,
     imu: Option<ImuService>,
+    attitude: AttitudeService,
 ) -> anyhow::Result<JoinHandle<()>> {
     thread::Builder::new()
         .name("serial_cmd".into())
@@ -55,7 +57,7 @@ pub fn spawn(
                                     continue;
                                 }
                                 echo_newline();
-                                match commands::handle_line(&line, &gate, imu.as_ref()) {
+                                match commands::handle_line(&line, &gate, imu.as_ref(), &attitude) {
                                     CommandAction::EnterJoystick => {
                                         mode = InputMode::Joystick(FlightStick::new());
                                         FlightStick::print_enter_banner();
@@ -78,7 +80,7 @@ pub fn spawn(
                             _ => {}
                         },
                         InputMode::Joystick(joy) => {
-                            if matches!(joy.handle_key(byte, &gate), KeyResult::Quit) {
+                            if matches!(joy.handle_key(byte, &gate, &attitude), KeyResult::Quit) {
                                 FlightStick::print_quit_banner();
                                 mode = InputMode::Command;
                                 prompt_shown = false;

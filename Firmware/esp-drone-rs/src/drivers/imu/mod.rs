@@ -7,11 +7,13 @@
 mod mpu6050;
 mod wiring;
 
+use std::time::Duration;
+
 use esp_idf_hal::gpio::{InputPin, OutputPin};
 use esp_idf_hal::i2c::{I2c, I2cConfig, I2cDriver};
 use esp_idf_hal::units::Hertz;
 
-pub use mpu6050::{Mpu6050, DEFAULT_ADDR};
+pub use mpu6050::{ImuSample, Mpu6050, DEFAULT_ADDR};
 pub use wiring::ImuWiring;
 
 /// Wire I2C at 400 kHz with internal pull-ups (breakout boards usually have external ones too).
@@ -25,6 +27,12 @@ where
     SDA: InputPin + OutputPin + 'd,
     SCL: InputPin + OutputPin + 'd,
 {
-    let config = I2cConfig::new().baudrate(Hertz(400_000));
+    let config = I2cConfig::new()
+        .baudrate(Hertz(400_000))
+        .sda_enable_pullup(true)
+        .scl_enable_pullup(true)
+        // Bound a stuck SCL. Without this, a wedged bus parks the sample task
+        // inside a blocking transaction and the fault never clears.
+        .timeout(Duration::from_millis(5).into());
     Ok(I2cDriver::new(i2c, sda, scl, &config)?)
 }

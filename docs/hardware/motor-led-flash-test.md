@@ -36,7 +36,7 @@ For per-motor **spin** tests (props attached), use `BenchMode::Spin` instead —
 
 ## Wiring
 
-Connect **one LED + 330 Ω resistor** per motor pin (cathode to GND). See [poc-left-header-wiring.md](./poc-left-header-wiring.md).
+Connect **one LED** per motor pin, cathode straight to GND. See [poc-left-header-wiring.md](./poc-left-header-wiring.md).
 
 | Step | Motor | GPIO | Header | Frame corner | LED should glow |
 |------|-------|------|--------|--------------|-----------------|
@@ -81,7 +81,7 @@ When `run_bench_test(..., BenchMode::Led)` is enabled on boot:
 
 | Symptom | Likely cause |
 |---------|----------------|
-| No LEDs | Wrong GPIO, LED polarity, missing resistor, or not on left header pins |
+| No LEDs | Wrong GPIO, LED polarity, or not on left header pins |
 | Wrong order | Swap labels on breadboard — follow table above |
 | Multiple LEDs on | Shared wiring fault or short |
 | Reboot loop | Check serial for panic |

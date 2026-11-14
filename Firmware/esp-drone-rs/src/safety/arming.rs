@@ -8,6 +8,8 @@ pub enum DisarmReason {
     Command,
     Stop,
     JoyQuit,
+    /// Attitude mode cut output because the IMU sample was stale or the mix could not be applied.
+    AttitudeFault,
 }
 
 pub struct Arming {

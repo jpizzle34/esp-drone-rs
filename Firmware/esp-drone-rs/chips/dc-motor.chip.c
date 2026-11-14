@@ -1,5 +1,5 @@
 // Minimal 8520 coreless brushed motor for ESP-Drone POC (Wokwi).
-// V+ / V- accept logic-level motor terminal voltages (low-side MOSFET drive).
+// V+ / V- accept logic-level motor terminal voltages (low-side SI2300 drive).
 // ENC_A / ENC_B output quadrature; display shows prop rotation.
 
 #include "wokwi-api.h"

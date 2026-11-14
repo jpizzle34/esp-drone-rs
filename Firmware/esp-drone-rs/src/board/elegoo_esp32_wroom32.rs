@@ -12,7 +12,7 @@ use crate::board::profile::{BoardPin, BoardProfile, PeripheralPins};
 use crate::drivers::imu::{wire_i2c_bus, ImuWiring, Mpu6050, DEFAULT_ADDR};
 use crate::drivers::motors::{
     assert_gpio_order, assert_slot_order, assert_table_gpio_order, build_table, MotorMeta,
-    MotorPinMeta, Motors, MotorWiring,
+    MotorPinMeta, MotorWiring, Motors,
 };
 
 /// Board profile marker — implements [`BoardProfile`] for the Elegoo POC wiring.
@@ -124,7 +124,10 @@ impl DronePins {
 }
 
 impl ImuWiring for ImuPins {
-    fn wire<I2C: esp_idf_hal::i2c::I2c + 'static>(self, i2c: I2C) -> anyhow::Result<Mpu6050<'static>> {
+    fn wire<I2C: esp_idf_hal::i2c::I2c + 'static>(
+        self,
+        i2c: I2C,
+    ) -> anyhow::Result<Mpu6050<'static>> {
         let i2c = wire_i2c_bus(i2c, self.sda, self.scl)?;
         Ok(Mpu6050::new(i2c, DEFAULT_ADDR))
     }
