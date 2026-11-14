@@ -1,11 +1,13 @@
-//! Attitude / state estimation — Phase 3.
+//! Attitude estimation.
 //!
 //! ```text
 //! estimation/
 //!   mod.rs    — this file
-//!   fusion.rs — complementary or Mahony filter
+//!   fusion.rs — Mahony AHRS (gyro + accel)
 //! ```
 //!
-//! Reference C: `sensfusion6.c`
+//! Reference C: `sensfusion6.c` (Mahony path). Kalman stays deferred.
 
 mod fusion;
+
+pub use fusion::{AttitudeDeg, Mahony};

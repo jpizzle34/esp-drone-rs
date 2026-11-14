@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IMU live</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <header class="top">
+      <div>
+        <p class="eyebrow">esp-drone-rs</p>
+        <h1>IMU live</h1>
+      </div>
+      <div class="status-block">
+        <span id="statusDot" class="dot"></span>
+        <div>
+          <div id="statusText">connecting…</div>
+          <div id="statusMeta" class="meta"></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="readout" id="readout">
+      <div><span>roll</span><strong id="vRoll">—</strong></div>
+      <div><span>pitch</span><strong id="vPitch">—</strong></div>
+      <div><span>yaw</span><strong id="vYaw">—</strong></div>
+      <div><span>temp</span><strong id="vTemp">—</strong></div>
+    </section>
+
+    <div class="workspace">
+      <main class="charts">
+        <article class="drone-card">
+          <h2>Airframe</h2>
+          <canvas id="droneView" aria-label="Drone attitude, level"></canvas>
+          <p class="hint">Blue roll: right side down is positive. Green pitch: nose up is positive. Amber yaw: nose right is positive. Rotor brightness is commanded duty.</p>
+        </article>
+        <article>
+          <h2>Attitude (°)</h2>
+          <canvas id="attChart"></canvas>
+        </article>
+        <article>
+          <h2>Accel (g)</h2>
+          <canvas id="accChart"></canvas>
+        </article>
+        <article>
+          <h2>Gyro (°/s)</h2>
+          <canvas id="gyroChart"></canvas>
+        </article>
+      </main>
+
+      <aside class="side">
+        <section class="panel">
+          <h2>IMU</h2>
+          <div class="row">
+            <button id="btnOn" type="button">imu on</button>
+            <button id="btnOff" type="button">imu off</button>
+            <button id="btnCal" type="button">imu cal</button>
+            <button id="btnImu" type="button">imu</button>
+            <label class="field">
+              Hz
+              <input id="hzInput" type="number" min="1" max="100" value="25" />
+            </label>
+            <button id="btnHelp" type="button">help</button>
+          </div>
+          <p id="eventLog" class="events"></p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Motors</h2>
+            <span id="armState" class="state">Disarmed</span>
+          </div>
+          <p class="hint">Commanded duty, not RPM. POC_LEFT_HEADER, top view.</p>
+          <div class="row">
+            <button id="btnArm" type="button">arm</button>
+            <button id="btnDisarm" type="button">disarm</button>
+            <button id="btnStop" type="button">stop</button>
+          </div>
+          <div class="row">
+            <label class="field">
+              Duty
+              <input id="dutyInput" type="number" min="0" max="100" value="0" disabled />
+            </label>
+            <button id="btnM1" type="button" disabled>M1</button>
+            <button id="btnM2" type="button" disabled>M2</button>
+            <button id="btnM3" type="button" disabled>M3</button>
+            <button id="btnM4" type="button" disabled>M4</button>
+            <button id="btnAll" type="button" disabled>all</button>
+          </div>
+          <div class="row">
+            <label class="field">
+              Pulse ms
+              <input id="pulseMs" type="number" min="1" max="30000" value="300" disabled />
+            </label>
+            <button id="btnPulse" type="button" disabled>motor pulse</button>
+          </div>
+
+          <div id="motorQuad" class="quad disarmed" role="img" aria-label="Motor output disarmed">
+            <div class="quad-caption">front</div>
+            <div class="quad-grid">
+              <div class="motor">
+                <div class="motor-id"><b>M4</b><span class="pct" data-pct="3">0%</span></div>
+                <div class="pin">front-left · D26</div>
+                <div class="bar" aria-hidden="true"><span data-bar="3"></span></div>
+              </div>
+              <div class="motor">
+                <div class="motor-id"><b>M1</b><span class="pct" data-pct="0">0%</span></div>
+                <div class="pin">front-right · D32</div>
+                <div class="bar" aria-hidden="true"><span data-bar="0"></span></div>
+              </div>
+              <div class="motor">
+                <div class="motor-id"><b>M3</b><span class="pct" data-pct="2">0%</span></div>
+                <div class="pin">back-left · D25</div>
+                <div class="bar" aria-hidden="true"><span data-bar="2"></span></div>
+              </div>
+              <div class="motor">
+                <div class="motor-id"><b>M2</b><span class="pct" data-pct="1">0%</span></div>
+                <div class="pin">back-right · D33</div>
+                <div class="bar" aria-hidden="true"><span data-bar="1"></span></div>
+              </div>
+            </div>
+            <div class="quad-caption">back</div>
+          </div>
+          <p id="pulseNote" class="hint" hidden></p>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Attitude</h2>
+            <span id="attState" class="state">Off</span>
+          </div>
+          <p class="hint">Props off. att on holds level and the current yaw. Thrust 0 keeps the motors stopped. Tilt the board and the low side should spin up.</p>
+          <div class="row">
+            <button id="btnAttOn" type="button" disabled>att on</button>
+            <button id="btnAttOff" type="button" disabled>att off</button>
+            <button id="btnAttLevel" type="button" disabled>level</button>
+          </div>
+          <div class="row">
+            <label class="field">
+              Thrust
+              <input id="attThrust" type="number" min="0" max="100" value="0" disabled />
+            </label>
+            <button id="btnAttThrust" type="button" disabled>set</button>
+          </div>
+          <div class="row">
+            <label class="field">
+              Roll
+              <input id="attRoll" type="number" min="-30" max="30" value="0" disabled />
+            </label>
+            <label class="field">
+              Pitch
+              <input id="attPitch" type="number" min="-30" max="30" value="0" disabled />
+            </label>
+            <button id="btnAttAngles" type="button" disabled>set</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>PID</h2>
+            <span id="pidState" class="state">Defaults</span>
+          </div>
+          <p class="hint">Angle loop, then rate loop. Apply writes Kp Ki Kd, from 0 to 5000. A changed loop clears its integrator. Props off while tuning.</p>
+          <div class="pid-table">
+            <div class="pid-label"></div>
+            <div class="pid-label">Kp</div>
+            <div class="pid-label">Ki</div>
+            <div class="pid-label">Kd</div>
+            <div class="pid-split">Angle</div>
+            <span class="pid-name roll">Roll</span>
+            <input data-loop="roll" data-term="kp" type="number" min="0" max="5000" step="0.01" aria-label="Roll Kp" />
+            <input data-loop="roll" data-term="ki" type="number" min="0" max="5000" step="0.01" aria-label="Roll Ki" />
+            <input data-loop="roll" data-term="kd" type="number" min="0" max="5000" step="0.01" aria-label="Roll Kd" />
+            <span class="pid-name pitch">Pitch</span>
+            <input data-loop="pitch" data-term="kp" type="number" min="0" max="5000" step="0.01" aria-label="Pitch Kp" />
+            <input data-loop="pitch" data-term="ki" type="number" min="0" max="5000" step="0.01" aria-label="Pitch Ki" />
+            <input data-loop="pitch" data-term="kd" type="number" min="0" max="5000" step="0.01" aria-label="Pitch Kd" />
+            <span class="pid-name yaw">Yaw</span>
+            <input data-loop="yaw" data-term="kp" type="number" min="0" max="5000" step="0.01" aria-label="Yaw Kp" />
+            <input data-loop="yaw" data-term="ki" type="number" min="0" max="5000" step="0.01" aria-label="Yaw Ki" />
+            <input data-loop="yaw" data-term="kd" type="number" min="0" max="5000" step="0.01" aria-label="Yaw Kd" />
+            <div class="pid-split">Rate</div>
+            <span class="pid-name roll">Roll</span>
+            <input data-loop="roll-rate" data-term="kp" type="number" min="0" max="5000" step="0.01" aria-label="Roll rate Kp" />
+            <input data-loop="roll-rate" data-term="ki" type="number" min="0" max="5000" step="0.01" aria-label="Roll rate Ki" />
+            <input data-loop="roll-rate" data-term="kd" type="number" min="0" max="5000" step="0.01" aria-label="Roll rate Kd" />
+            <span class="pid-name pitch">Pitch</span>
+            <input data-loop="pitch-rate" data-term="kp" type="number" min="0" max="5000" step="0.01" aria-label="Pitch rate Kp" />
+            <input data-loop="pitch-rate" data-term="ki" type="number" min="0" max="5000" step="0.01" aria-label="Pitch rate Ki" />
+            <input data-loop="pitch-rate" data-term="kd" type="number" min="0" max="5000" step="0.01" aria-label="Pitch rate Kd" />
+            <span class="pid-name yaw">Yaw</span>
+            <input data-loop="yaw-rate" data-term="kp" type="number" min="0" max="5000" step="0.01" aria-label="Yaw rate Kp" />
+            <input data-loop="yaw-rate" data-term="ki" type="number" min="0" max="5000" step="0.01" aria-label="Yaw rate Ki" />
+            <input data-loop="yaw-rate" data-term="kd" type="number" min="0" max="5000" step="0.01" aria-label="Yaw rate Kd" />
+          </div>
+          <div class="row">
+            <button id="btnPidRead" type="button">read</button>
+            <button id="btnPidApply" type="button">apply</button>
+            <button id="btnPidDefaults" type="button">defaults</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Stick</h2>
+          <p id="stickHint" class="hint">Arm first. joy on is rejected while disarmed. Q quits and disarms.</p>
+          <div class="row">
+            <button id="btnJoyOn" type="button" disabled>joy on</button>
+            <button id="btnJoyOff" type="button" disabled>joy off</button>
+          </div>
+          <div id="stickPad" hidden>
+            <div class="stick-grid">
+              <span></span>
+              <button type="button" data-key="e" title="Throttle up">E</button>
+              <span></span>
+              <button type="button" data-key="a" title="Roll left">A</button>
+              <button type="button" data-key="w" title="Pitch forward">W</button>
+              <button type="button" data-key="d" title="Roll right">D</button>
+              <span></span>
+              <button type="button" data-key="s" title="Pitch back">S</button>
+              <span></span>
+              <span></span>
+              <button type="button" data-key="c" title="Throttle down">C</button>
+              <span></span>
+            </div>
+            <div class="row">
+              <button type="button" data-key=" " title="Reset axes, motors off, stay armed">Space</button>
+              <button type="button" class="danger" data-key="q" title="Quit joystick and disarm">Q quit</button>
+              <button type="button" data-key="?" title="Stick help">?</button>
+            </div>
+            <p class="hint">E/C throttle · W/S pitch · A/D roll. Keys work while this pad is open.</p>
+          </div>
+        </section>
+
+        <section class="panel serial-panel">
+          <h2>Serial</h2>
+          <div id="serialLog" class="serial-log" role="log" aria-live="off" tabindex="0"></div>
+        </section>
+      </aside>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

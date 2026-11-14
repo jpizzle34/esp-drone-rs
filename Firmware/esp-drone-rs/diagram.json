@@ -25,109 +25,49 @@
       "top": 20,
       "left": 0,
       "attrs": {
-        "text": "SI2300 low-side MOSFET ×4 · Schottky flyback ×4 · 3.3 V · 15 kHz PWM · X-quad"
+        "text": "SI2300 low-side ×4 · gate tied to GPIO · 1N5819 flyback ×4 · 3.3 V · 15 kHz PWM · X-quad"
       }
     },
     {
       "type": "wokwi-text",
       "id": "label_front",
       "top": 60,
-      "left": 420,
+      "left": 680,
       "attrs": { "text": "FRONT ↑" }
     },
     {
-      "type": "chip-mosfet-n",
-      "id": "fet_m1",
+      "type": "chip-si2300",
+      "id": "q_m1",
       "top": 80,
-      "left": 200,
+      "left": 310,
       "attrs": {}
     },
     {
-      "type": "chip-mosfet-n",
-      "id": "fet_m2",
+      "type": "chip-si2300",
+      "id": "q_m2",
       "top": 200,
-      "left": 200,
+      "left": 310,
       "attrs": {}
     },
     {
-      "type": "chip-mosfet-n",
-      "id": "fet_m3",
+      "type": "chip-si2300",
+      "id": "q_m3",
       "top": 320,
-      "left": 200,
+      "left": 310,
       "attrs": {}
     },
     {
-      "type": "chip-mosfet-n",
-      "id": "fet_m4",
+      "type": "chip-si2300",
+      "id": "q_m4",
       "top": 440,
-      "left": 200,
+      "left": 310,
       "attrs": {}
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "rg_m1",
-      "top": 100,
-      "left": 120,
-      "attrs": { "value": "220" }
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "rg_m2",
-      "top": 220,
-      "left": 120,
-      "attrs": { "value": "220" }
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "rg_m3",
-      "top": 340,
-      "left": 120,
-      "attrs": { "value": "220" }
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "rg_m4",
-      "top": 460,
-      "left": 120,
-      "attrs": { "value": "220" }
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "pd_m1",
-      "top": 140,
-      "left": 120,
-      "rotate": 90,
-      "attrs": { "value": "10000" }
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "pd_m2",
-      "top": 260,
-      "left": 120,
-      "rotate": 90,
-      "attrs": { "value": "10000" }
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "pd_m3",
-      "top": 380,
-      "left": 120,
-      "rotate": 90,
-      "attrs": { "value": "10000" }
-    },
-    {
-      "type": "wokwi-resistor",
-      "id": "pd_m4",
-      "top": 500,
-      "left": 120,
-      "rotate": 90,
-      "attrs": { "value": "10000" }
     },
     {
       "type": "chip-diode",
       "id": "d_m1",
       "top": 100,
-      "left": 380,
+      "left": 500,
       "rotate": 90,
       "attrs": {}
     },
@@ -135,7 +75,7 @@
       "type": "chip-diode",
       "id": "d_m2",
       "top": 220,
-      "left": 380,
+      "left": 500,
       "rotate": 90,
       "attrs": {}
     },
@@ -143,7 +83,7 @@
       "type": "chip-diode",
       "id": "d_m3",
       "top": 340,
-      "left": 380,
+      "left": 500,
       "rotate": 90,
       "attrs": {}
     },
@@ -151,7 +91,7 @@
       "type": "chip-diode",
       "id": "d_m4",
       "top": 460,
-      "left": 380,
+      "left": 500,
       "rotate": 90,
       "attrs": {}
     },
@@ -159,56 +99,56 @@
       "type": "chip-dc-motor",
       "id": "motor_m1",
       "top": 80,
-      "left": 560,
+      "left": 680,
       "attrs": {}
     },
     {
       "type": "chip-dc-motor",
       "id": "motor_m2",
       "top": 200,
-      "left": 560,
+      "left": 680,
       "attrs": {}
     },
     {
       "type": "chip-dc-motor",
       "id": "motor_m3",
       "top": 320,
-      "left": 560,
+      "left": 680,
       "attrs": {}
     },
     {
       "type": "chip-dc-motor",
       "id": "motor_m4",
       "top": 440,
-      "left": 560,
+      "left": 680,
       "attrs": {}
     },
     {
       "type": "wokwi-text",
       "id": "lbl_m1",
       "top": 60,
-      "left": 560,
+      "left": 680,
       "attrs": { "text": "M1 FR · D32 · GPIO32" }
     },
     {
       "type": "wokwi-text",
       "id": "lbl_m2",
       "top": 180,
-      "left": 560,
+      "left": 680,
       "attrs": { "text": "M2 BR · D33 · GPIO33" }
     },
     {
       "type": "wokwi-text",
       "id": "lbl_m3",
       "top": 300,
-      "left": 560,
+      "left": 680,
       "attrs": { "text": "M3 BL · D25 · GPIO25" }
     },
     {
       "type": "wokwi-text",
       "id": "lbl_m4",
       "top": 420,
-      "left": 560,
+      "left": 680,
       "attrs": { "text": "M4 FL · D26 · GPIO26" }
     },
     {
@@ -233,19 +173,12 @@
       "attrs": { "color": "orange", "label": "D27 status" }
     },
     {
-      "type": "wokwi-resistor",
-      "id": "r_status",
-      "top": 620,
-      "left": 120,
-      "attrs": { "value": "330" }
-    },
-    {
       "type": "wokwi-text",
       "id": "pwr_note",
       "top": 580,
-      "left": 560,
+      "left": 680,
       "attrs": {
-        "text": "Flyback: Schottky C→motor+, A→drain.\nPOC: 3V3 motor rail. Real: 1S LiPo + common GND."
+        "text": "SI2300: GPIO → gate, source → GND, drain → motor −.\nSOT-23: pin 1 gate, pin 2 source, pin 3 drain.\nFlyback: 1N5819 band (cathode) → motor+, anode → drain.\nPOC: 3V3 motor rail. Real: 1S LiPo + common GND."
       }
     }
   ],
@@ -253,49 +186,36 @@
     ["esp:TX", "$serialMonitor:RX", "", []],
     ["esp:RX", "$serialMonitor:TX", "", []],
 
-    ["esp:32", "rg_m1:1", "red", ["h0"]],
-    ["rg_m1:2", "fet_m1:GATE", "red", []],
-    ["pd_m1:1", "fet_m1:GATE", "gray", []],
-    ["pd_m1:2", "esp:GND.2", "black", []],
+    ["esp:32", "q_m1:GATE", "red", ["h0"]],
     ["esp:3V3", "motor_m1:V+", "red", ["h0"]],
     ["motor_m1:V+", "d_m1:CATHODE", "red", []],
-    ["d_m1:ANODE", "fet_m1:DRAIN", "green", []],
-    ["motor_m1:V-", "fet_m1:DRAIN", "green", []],
-    ["fet_m1:SOURCE", "esp:GND.2", "black", []],
+    ["d_m1:ANODE", "q_m1:DRAIN", "green", []],
+    ["motor_m1:V-", "q_m1:DRAIN", "green", []],
+    ["q_m1:SOURCE", "esp:GND.2", "black", []],
 
-    ["esp:33", "rg_m2:1", "green", ["h0"]],
-    ["rg_m2:2", "fet_m2:GATE", "green", []],
-    ["pd_m2:1", "fet_m2:GATE", "gray", []],
-    ["pd_m2:2", "esp:GND.2", "black", []],
+    ["esp:33", "q_m2:GATE", "green", ["h0"]],
     ["esp:3V3", "motor_m2:V+", "red", ["h0"]],
     ["motor_m2:V+", "d_m2:CATHODE", "red", []],
-    ["d_m2:ANODE", "fet_m2:DRAIN", "green", []],
-    ["motor_m2:V-", "fet_m2:DRAIN", "green", []],
-    ["fet_m2:SOURCE", "esp:GND.2", "black", []],
+    ["d_m2:ANODE", "q_m2:DRAIN", "green", []],
+    ["motor_m2:V-", "q_m2:DRAIN", "green", []],
+    ["q_m2:SOURCE", "esp:GND.2", "black", []],
 
-    ["esp:25", "rg_m3:1", "blue", ["h0"]],
-    ["rg_m3:2", "fet_m3:GATE", "blue", []],
-    ["pd_m3:1", "fet_m3:GATE", "gray", []],
-    ["pd_m3:2", "esp:GND.2", "black", []],
+    ["esp:25", "q_m3:GATE", "blue", ["h0"]],
     ["esp:3V3", "motor_m3:V+", "red", ["h0"]],
     ["motor_m3:V+", "d_m3:CATHODE", "red", []],
-    ["d_m3:ANODE", "fet_m3:DRAIN", "green", []],
-    ["motor_m3:V-", "fet_m3:DRAIN", "green", []],
-    ["fet_m3:SOURCE", "esp:GND.2", "black", []],
+    ["d_m3:ANODE", "q_m3:DRAIN", "green", []],
+    ["motor_m3:V-", "q_m3:DRAIN", "green", []],
+    ["q_m3:SOURCE", "esp:GND.2", "black", []],
 
-    ["esp:26", "rg_m4:1", "gold", ["h0"]],
-    ["rg_m4:2", "fet_m4:GATE", "gold", []],
-    ["pd_m4:1", "fet_m4:GATE", "gray", []],
-    ["pd_m4:2", "esp:GND.2", "black", []],
+    ["esp:26", "q_m4:GATE", "gold", ["h0"]],
     ["esp:3V3", "motor_m4:V+", "red", ["h0"]],
     ["motor_m4:V+", "d_m4:CATHODE", "red", []],
-    ["d_m4:ANODE", "fet_m4:DRAIN", "green", []],
-    ["motor_m4:V-", "fet_m4:DRAIN", "green", []],
-    ["fet_m4:SOURCE", "esp:GND.2", "black", []],
+    ["d_m4:ANODE", "q_m4:DRAIN", "green", []],
+    ["motor_m4:V-", "q_m4:DRAIN", "green", []],
+    ["q_m4:SOURCE", "esp:GND.2", "black", []],
 
     ["esp:27", "led_status:A", "orange", ["h0"]],
-    ["led_status:C", "r_status:1", "black", []],
-    ["r_status:2", "esp:GND.2", "black", []],
+    ["led_status:C", "esp:GND.2", "black", []],
 
     ["esp:14", "imu:SDA", "green", ["h0"]],
     ["esp:13", "imu:SCL", "yellow", ["h0"]],

@@ -1,9 +1,12 @@
 [build]
 target = "xtensa-esp32-espidf"
+# Sources ~/export-esp.sh before rustc, so the linker sees the Xtensa GCC.
+rustc-wrapper = "scripts/esp-env.sh"
 
 [target.'cfg(target_os = "espidf")']
 linker = "ldproxy"
-runner = "espflash flash --monitor"
+# Sources ~/export-esp.sh before espflash on `cargo run`.
+runner = "scripts/esp-env.sh espflash flash --monitor"
 rustflags = [ "--cfg",  "espidf_time64"]
 
 [unstable]

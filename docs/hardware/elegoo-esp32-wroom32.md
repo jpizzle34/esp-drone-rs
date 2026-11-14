@@ -44,7 +44,7 @@ Development board used for the Rust firmware POC: dual-core Xtensa ESP32, CP2102
 
 | Function | GPIO | Header | Frame corner |
 |----------|------|--------|--------------|
-| Status LED | 27 | D27 | External LED + 330 Ω to GND |
+| Status LED | 27 | D27 | External LED, cathode to GND |
 | I2C SDA | 14 | D14 | MPU-6050 |
 | I2C SCL | 13 | D13 | MPU-6050 |
 | Motor M1 | 32 | D32 | LEDC PWM — **front-right** |

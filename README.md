@@ -2,7 +2,7 @@
 
 Rust firmware for an ESP32 quadcopter, built on [ESP-IDF](https://docs.espressif.com/projects/esp-idf/) via the [esp-rs](https://github.com/esp-rs) toolchain. This repo is a fork of the [ESP-FLY](https://www.seeedstudio.com/) / ESP-Drone ecosystem; active development is the Rust crate in `Firmware/esp-drone-rs/`. The original C firmware in `Firmware/esp-drone/` is kept for reference only.
 
-**Current firmware:** boots **disarmed** to a serial REPL, **arming gate** (`arm` / `disarm`), joystick mode (`joy on` when armed), IMU ready with stream **off by default**, status LED on D27. Commands: [docs/hardware/serial-commands.md](docs/hardware/serial-commands.md).
+**Current firmware:** boots **disarmed** to a serial REPL, **arming gate** (`arm` / `disarm`), joystick mode (`joy on` when armed), IMU ready with stream **off by default**, and attitude mode (`att on` when armed — thrust stays 0 until `att thrust`). Status LED on D27. Commands: [docs/hardware/serial-commands.md](docs/hardware/serial-commands.md).
 
 ---
 
@@ -31,8 +31,8 @@ Co-Create_ESP-FLY/          ← clone the repo here (any folder name is fine)
 │   │   │   ├── board/      ← pin profiles ([`BoardProfile`](Firmware/esp-drone-rs/src/board/profile.rs), [`PeripheralPins`](Firmware/esp-drone-rs/src/board/profile.rs))
 │   │   │   ├── drivers/    ← hardware drivers (motors + IMU active; power stub)
 │   │   │   ├── sensors/    ← IMU sample task (active)
-│   │   │   ├── estimation/ ← attitude fusion (stub)
-│   │   │   ├── flight/     ← stabilizer, PID, mixer (stub)
+│   │   │   ├── estimation/ ← Mahony attitude (gyro + accel)
+│   │   │   ├── flight/     ← attitude PID, X mixer, 250 Hz stabilizer
 │   │   │   ├── comm/       ← serial REPL + joystick mode (active)
 │   │   │   └── safety/     ← arming gate, MotorGate (active)
 │   │   ├── .cargo/config.toml
@@ -113,17 +113,9 @@ Then install the ESP32 Rust toolchain (this downloads several hundred MB and may
 espup install
 ```
 
-That creates `~/export-esp.sh`, which sets `LIBCLANG_PATH` and adds the Xtensa GCC linker to `PATH`. You need those variables in your shell before Cargo can build or link.
+That creates `~/export-esp.sh`, which sets `LIBCLANG_PATH` and adds the Xtensa GCC linker to `PATH`.
 
-**You do not need to run `source` manually if you use the helper scripts** — `build.sh`, `flash.sh`, and `build-for-wokwi.sh` source `~/export-esp.sh` automatically when the ESP environment is not already loaded.
-
-If you prefer running `cargo` directly:
-
-```bash
-source ~/export-esp.sh   # once per terminal session
-```
-
-Or add it to `~/.bashrc` / `~/.zshrc` so every new terminal is ready.
+You do not need to `source` it yourself. `cargo build` and `cargo run` load it automatically (see `scripts/esp-env.sh` in [`.cargo/config.toml`](Firmware/esp-drone-rs/.cargo/config.toml)). The helper scripts do the same.
 
 If `~/export-esp.sh` is missing, re-run `espup install`.
 
@@ -147,7 +139,7 @@ That ELF is the firmware binary. `./scripts/build.sh` defaults to **release**; u
 
 ### Helper scripts
 
-All scripts live in `Firmware/esp-drone-rs/scripts/` and `cd` to the crate root automatically. They source `~/export-esp.sh` when needed.
+All scripts live in `Firmware/esp-drone-rs/scripts/` and `cd` to the crate root automatically. `cargo build` and `cargo run` load `~/export-esp.sh` on their own; the helper scripts do too.
 
 | Script | Command | What it does |
 | ------ | ------- | ------------ |
@@ -208,7 +200,7 @@ From **`Firmware/esp-drone-rs/`** (no manual `source` required):
 ./scripts/flash.sh debug      # debug
 ```
 
-Equivalent using `cargo` directly (requires `source ~/export-esp.sh` first, or ESP env in your shell profile):
+Equivalent using `cargo` directly (`~/export-esp.sh` is loaded for you):
 
 ```bash
 cargo run --release
@@ -236,7 +228,7 @@ OK armed — motor output enabled
 OK M2 duty 30%
 > imu on
 OK IMU stream on (10 Hz)
-IMU accel=(+0.01,-0.02,+1.00)g gyro=(+0,+1,-0)°/s tilt roll=+1.2° pitch=-0.5° temp=28.3°C
+IMU accel=(+0.01,-0.02,+1.00)g gyro=(+0,+1,-0)°/s roll=+1.2° pitch=-0.5° yaw=+0.0° temp=28.3°C
 > imu off
 OK IMU stream off
 ...
@@ -257,7 +249,7 @@ Type commands in the same monitor used by `./scripts/flash.sh` (**115200 baud**)
 | `motor …` | Per-motor / all / pulse duty (**armed only**) |
 | `joy on` | Joystick — **E/C** + **WASD** (**armed**; **Q** disarm) |
 | `joy off` | Disarm |
-| `imu` / `imu on` / `imu off` | IMU stream control |
+| `imu` / `imu on` / `imu off` / `imu cal` | Attitude, stream control, gyro re-zero |
 
 IMU data uses plain `println!` lines (no log prefix) only while `imu on` is active, so the monitor stays readable for typing.
 
@@ -284,7 +276,7 @@ cd Firmware/esp-drone-rs
 ./scripts/flash.sh            # build + flash + monitor (release)
 ./scripts/flash.sh debug      # build + flash + monitor (debug)
 
-# Or, if ~/export-esp.sh is already sourced in this shell:
+# Same thing via cargo — ~/export-esp.sh is loaded automatically
 cargo build --release
 cargo run --release
 ```
@@ -311,9 +303,9 @@ Recommended extensions (see `Firmware/esp-drone-rs/.vscode/extensions.json`):
 
 | Problem                                | What to try                                                                                                  |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `~/export-esp.sh` not found            | Run `espup install`; then use `./scripts/build.sh` or `source ~/export-esp.sh`                             |
-| `xtensa-esp32-espidf` target not found | Run `espup install`; use helper scripts or `source ~/export-esp.sh` before `cargo`                         |
-| `LIBCLANG_PATH` / linker errors        | ESP env not loaded — use `./scripts/flash.sh` or `source ~/export-esp.sh`                                  |
+| `~/export-esp.sh` not found            | Run `espup install`, then `cargo build` or `./scripts/build.sh`                                            |
+| `xtensa-esp32-espidf` target not found | Run `espup install` (the `esp` toolchain is selected by `rust-toolchain.toml`)                             |
+| `LIBCLANG_PATH` / linker errors        | `~/export-esp.sh` missing or stale — re-run `espup install`                                                |
 | Build fails on `cmake` / `ninja`       | Install system packages from step 2                                                                          |
 | First build very slow                  | Normal — ESP-IDF is compiling; wait for it to finish                                                         |
 | `Permission denied` on `/dev/ttyUSB0`  | Add user to `dialout` group (see Option B)                                                                   |
@@ -346,10 +338,10 @@ More Wokwi-specific issues: [docs/hardware/wokwi-simulation.md](docs/hardware/wo
 | [`drivers/motors/`](Firmware/esp-drone-rs/src/drivers/motors/) | Active | LEDC PWM, [`MotorWiring`](Firmware/esp-drone-rs/src/drivers/motors/wiring.rs), optional bench tests |
 | [`drivers/imu/`](Firmware/esp-drone-rs/src/drivers/imu/) | Active | MPU-6050 I2C, [`ImuWiring`](Firmware/esp-drone-rs/src/drivers/imu/wiring.rs) |
 | [`drivers/power/`](Firmware/esp-drone-rs/src/drivers/power/) | Stub | Battery ADC |
-| [`sensors/`](Firmware/esp-drone-rs/src/sensors/) | Active | IMU sample task (`sensors::init`) |
-| [`estimation/`](Firmware/esp-drone-rs/src/estimation/) | Stub | Attitude fusion |
-| [`flight/`](Firmware/esp-drone-rs/src/flight/) | Stub | 1 kHz stabilizer, PID, X-quad mixer |
-| [`comm/serial`](Firmware/esp-drone-rs/src/comm/serial.rs) | Active | UART REPL — motor duty, `joy on` stick, IMU stream on/off |
+| [`sensors/`](Firmware/esp-drone-rs/src/sensors/) | Active | IMU sample task, gyro bias, Mahony (`sensors::init`) |
+| [`estimation/`](Firmware/esp-drone-rs/src/estimation/) | Active | Mahony attitude (gyro + accel) |
+| [`flight/`](Firmware/esp-drone-rs/src/flight/) | Active | Attitude PID, X-quad mixer, 250 Hz stabilizer (`att on`) |
+| [`comm/serial`](Firmware/esp-drone-rs/src/comm/serial.rs) | Active | UART REPL — motor duty, `joy on` stick, IMU stream, attitude setpoints |
 | [`safety/`](Firmware/esp-drone-rs/src/safety/) | Active | [`MotorGate`](Firmware/esp-drone-rs/src/safety/motor_gate.rs) arming — disarmed by default |
 
 Pin maps: [`elegoo_esp32_wroom32.rs`](Firmware/esp-drone-rs/src/board/elegoo_esp32_wroom32.rs) (active POC), [`esplane_v1.rs`](Firmware/esp-drone-rs/src/board/esplane_v1.rs) (planned production PCB). Module tree is documented in [`drivers/mod.rs`](Firmware/esp-drone-rs/src/drivers/mod.rs).

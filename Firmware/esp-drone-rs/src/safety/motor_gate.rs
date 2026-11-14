@@ -8,7 +8,7 @@ use super::arming::{Arming, DisarmReason};
 
 pub const DISARMED_MSG: &str = "disarmed — type 'arm' first";
 
-/// Shared motors + arming state for every control path (serial, joystick, future stabilizer).
+/// Shared motors + arming state for every control path (serial, joystick, stabilizer).
 pub struct MotorGate {
     motors: Arc<Mutex<Motors>>,
     arming: Arming,

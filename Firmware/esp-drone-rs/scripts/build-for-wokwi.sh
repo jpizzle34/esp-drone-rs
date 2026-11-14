@@ -27,7 +27,7 @@ build_chip() {
   fi
 }
 
-build_chip chips/mosfet-n.chip.c chips/mosfet-n.chip.wasm || true
+build_chip chips/si2300.chip.c chips/si2300.chip.wasm || true
 build_chip chips/dc-motor.chip.c chips/dc-motor.chip.wasm || true
 build_chip chips/chip-diode.chip.c chips/chip-diode.chip.wasm || true
 
@@ -35,4 +35,4 @@ bash scripts/build.sh debug
 echo ""
 echo "Wokwi: open this folder in VS Code, then run 'Wokwi: Start Simulator'"
 echo "  ELF: target/xtensa-esp32-espidf/debug/esp-drone-rs"
-echo "  Chips: mosfet-n, dc-motor, chip-diode (see wokwi.toml [[chip]])"
+echo "  Chips: si2300, dc-motor, chip-diode (see wokwi.toml [[chip]])"

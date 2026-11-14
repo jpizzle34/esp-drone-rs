@@ -5,4 +5,4 @@
 
 mod imu;
 
-pub use imu::{init, ImuService, DEFAULT_STREAM_HZ};
+pub use imu::{init, ImuService, ImuSnapshot, DEFAULT_STREAM_HZ};

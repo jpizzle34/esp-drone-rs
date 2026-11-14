@@ -1,5 +1,5 @@
 {
-  "name": "MOSFET-N (SI2300 low-side)",
+  "name": "SI2300 N-MOSFET",
   "author": "Co-Create ESP-FLY",
   "pins": ["GATE", "DRAIN", "SOURCE", "", "", ""]
 }

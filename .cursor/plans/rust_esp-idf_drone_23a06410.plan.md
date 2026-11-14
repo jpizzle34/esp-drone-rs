@@ -85,8 +85,8 @@ Firmware/
       main.rs         # composition root
       board/          # BoardProfile + PeripheralPins [active]
       drivers/        # motors + imu [active], power [stub]
-      sensors/        # IMU stream task [active]
-      estimation/     # fusion [stub]
+      sensors/        # IMU 250 Hz + gyro bias [active]
+      estimation/     # Mahony fusion [active]
       flight/         # stabilizer, PID, mixer [stub]
       comm/           # serial, CRTP/WiFi [stub]
       safety/         # arming, failsafe [stub]
