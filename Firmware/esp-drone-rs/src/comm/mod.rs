@@ -3,7 +3,7 @@
 //! ```text
 //! comm/
 //!   mod.rs     — this file
-//!   serial.rs  — UART REPL (motor duty, joy on stick, IMU stream on/off)
+//!   serial.rs  — UART REPL (motor duty, joy on stick, IMU stream, attitude mode)
 //!   crtp.rs    — CRTP framing + RPYT commander over WiFi/UDP
 //! ```
 //!

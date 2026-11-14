@@ -3,6 +3,7 @@
 use std::io::Write;
 use std::sync::Arc;
 
+use crate::flight::AttitudeService;
 use crate::safety::{DisarmReason, MotorGate};
 
 /// Stick / throttle change per keypress (%).
@@ -50,7 +51,12 @@ impl FlightStick {
         reply("OK command mode — type 'help'");
     }
 
-    pub fn handle_key(&mut self, byte: u8, gate: &Arc<MotorGate>) -> KeyResult {
+    pub fn handle_key(
+        &mut self,
+        byte: u8,
+        gate: &Arc<MotorGate>,
+        attitude: &AttitudeService,
+    ) -> KeyResult {
         let changed = match byte {
             b'e' | b'E' => self.bump_throttle(AXIS_STEP as u32, false),
             b'c' | b'C' => self.bump_throttle(AXIS_STEP as u32, true),
@@ -66,6 +72,7 @@ impl FlightStick {
             }
             b'q' | b'Q' => {
                 self.reset();
+                attitude.disable();
                 let _ = gate.disarm(DisarmReason::JoyQuit);
                 return KeyResult::Quit;
             }

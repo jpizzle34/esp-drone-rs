@@ -50,7 +50,9 @@ fn main() -> anyhow::Result<()> {
     let motors = Arc::new(Mutex::new(motors));
     let gate = MotorGate::new(motors);
     let imu = sensors::init(imu_pins, i2c0)?;
-    let _serial_task = comm::spawn_serial(gate, imu)?;
+    let attitude = flight::AttitudeService::new(imu.is_some());
+    let _stabilizer = flight::spawn(gate.clone(), imu.clone(), attitude.clone())?;
+    let _serial_task = comm::spawn_serial(gate, imu, attitude)?;
 
     for _ in 0..2 {
         status_led.set_high()?;

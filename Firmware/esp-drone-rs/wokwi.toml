@@ -5,8 +5,8 @@ elf = "target/xtensa-esp32-espidf/debug/esp-drone-rs"
 firmware = "target/xtensa-esp32-espidf/debug/esp-drone-rs"
 
 [[chip]]
-name = "mosfet-n"
-binary = "chips/mosfet-n.chip.wasm"
+name = "si2300"
+binary = "chips/si2300.chip.wasm"
 
 [[chip]]
 name = "dc-motor"

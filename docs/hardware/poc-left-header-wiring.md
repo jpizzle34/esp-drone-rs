@@ -37,7 +37,7 @@ All four motor wires leave the **same board header** (left). That has nothing to
 | **M4** | 26 | D26 | **Front-left** |
 | **SDA** | 14 | D14 | MPU-6050 SDA |
 | **SCL** | 13 | D13 | MPU-6050 SCL |
-| **LED** | 27 | D27 | LED anode (+ 330 Ω); cathode → GND |
+| **LED** | 27 | D27 | LED anode; cathode → GND |
 | **3V3** | — | right header 3V3 | MPU-6050 VCC |
 | **GND** | — | left or right GND | Common ground |
 
@@ -85,24 +85,26 @@ Motor index order in firmware is **M1 → M2 → M3 → M4** (front-right, back-
 
 ## Motor driver (per channel)
 
-Each GPIO drives a **low-side N-channel MOSFET** (SI2300-class). Add a **Schottky flyback diode** per motor to clamp inductive kick when the FET turns off.
+Each GPIO drives the **gate of an SI2300** (Si2300DS) directly. There is no series resistor and no gate pull-down. The four motors sit in parallel on the supply: every motor positive shares battery positive, and each drain switches one motor negative to ground. A **1N5819 Schottky** across each motor clamps inductive kick when the MOSFET turns off.
+
+SOT-23, marking **P2** facing you, pins down: **1 gate, 2 source, 3 drain**.
 
 ```
   motor supply (+) ────────► motor +
-                         ┌──►|──  Schottky (cathode → +)
-  GPIO ──[220 Ω]──►|G    │    anode ──► motor −
-                   D|────┘
-                   |S
-                   └──► GND (common with ESP32)
-        gate ──[10 kΩ]──► GND   (pull-down)
+                         ┌──►|──  1N5819 (band / cathode → +)
+  GPIO ────────────►|G    │    anode ──► motor −
+            SI2300  D|────┘
+                    |S
+                    └──► GND (common with ESP32)
 ```
 
 | Part | Value / type | Notes |
 |------|----------------|-------|
-| MOSFET | N-ch (e.g. SI2300, AO3400) | Low-side switch |
-| Flyback diode | Schottky SS14 / 1N5819 | **C** → motor **+**, **A** → motor **−** / drain |
-| Gate resistor | 220 Ω (optional) | Between GPIO and gate |
-| Gate pull-down | 10 kΩ | Gate → GND |
+| MOSFET | SI2300 N-channel | Low-side switch, one per motor |
+| Gate | GPIO direct | D32 / D33 / D25 / D26 to pin 1. No resistor |
+| Source | GND | Pin 2. Common with ESP32 and battery negative |
+| Drain | Motor − | Pin 3. One drain per motor |
+| Flyback diode | 1N5819 Schottky | Band (**C**) → motor **+**, anode → drain |
 
 **POC bench:** motor **+** from **1S LiPo (~3.8 V)** for meaningful 8520 thrust when using serial commands or bench tests. LED-only GPIO checks can use **3.3 V** with no props — see [motor-led-flash-test.md](./motor-led-flash-test.md). **Flight build:** same LiPo supply; ESP32 **GND** common only — do not power motors from the ESP **3V3** pin on a real quad.
 
@@ -112,28 +114,28 @@ Each GPIO drives a **low-side N-channel MOSFET** (SI2300-class). Add a **Schottk
          Elegoo LEFT HEADER                    Motor driver (×4, one shown)
          ─────────────────                    ───────────────────────────
 
-         D32 (M1, FR) ───────────────────────► GPIO → MOSFET → M1 motor −
+         D32 (M1, FR) ───────────────────────► SI2300 gate → drain → M1 motor −
          D33 (M2, BR) ───────────────────────► (same for M2–M4)
          D25 (M3, BL)
          D26 (M4, FL)
 
-         motor + (×4) ◄── 1S LiPo + (spin test) or 3V3 (LED-only check)
-                              each: flyback C→+, A→−
+         motor + (×4, in parallel) ◄── 1S LiPo + (spin test) or 3V3 (LED-only check)
+                              each: 1N5819 band → +, anode → drain
 
          D14 (SDA) ──────────────────────────► MPU-6050 SDA
          D13 (SCL) ──────────────────────────► MPU-6050 SCL
 
-         D27 (LED) ────[ 330 Ω ]─── LED ─────► GND
+         D27 (LED) ──── LED anode; cathode ──► GND
 
-         GND ────────────────────────────────► GND rail (ESP + MOSFET S + LiPo −)
+         GND ────────────────────────────────► GND rail (ESP + SI2300 source + LiPo −)
          (3V3 from RIGHT header) ───────────► MPU-6050 VCC
 ```
 
-For GPIO-only checks without motors, use **LED + 330 Ω** on each motor pin instead of the MOSFET chain — see [motor-led-flash-test.md](./motor-led-flash-test.md).
+For GPIO-only checks without motors, use an **LED** on each motor pin (cathode to GND) instead of the SI2300 — see [motor-led-flash-test.md](./motor-led-flash-test.md).
 
 ## Notes
 
 - The **onboard LED (D2 / GPIO 2)** is on the right header and is **not used** in this POC profile. Phase 0 blink uses an **external LED on D27**.
 - **Do not** route motor or I2C signals to the right header in POC — keeps wiring on one side of the **board**, not the drone.
-- **Flyback diodes** (Schottky, one per motor) are required on **breadboard** builds with discrete MOSFETs; see [wokwi-simulation.md](./wokwi-simulation.md) for the matching Wokwi diagram.
+- **1N5819** flyback diodes (one per motor) sit across each motor, band toward motor positive. The gate wire has no resistor. See [wokwi-simulation.md](./wokwi-simulation.md).
 - For the production drone PCB, see the ESPLANE_V1 section in [elegoo-esp32-wroom32.md](./elegoo-esp32-wroom32.md) and [`esplane_v1.rs`](../../Firmware/esp-drone-rs/src/board/esplane_v1.rs).

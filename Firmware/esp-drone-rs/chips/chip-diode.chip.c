@@ -1,3 +1,4 @@
+// 1N5819 Schottky flyback. Digital stand-in: anode low pulls cathode low.
 #include "wokwi-api.h"
 #include <stdio.h>
 #include <stdlib.h>

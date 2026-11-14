@@ -1,0 +1,24 @@
+{
+  "name": "imu-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:client": "esbuild public/app.ts --bundle --format=esm --outfile=public/app.js --target=es2022",
+    "typecheck": "tsc --noEmit",
+    "test:parse": "tsx src/parseImu.test.ts && tsx src/benchState.test.ts && tsx src/parsePid.test.ts",
+    "dev": "npm run build:client && tsx src/server.ts",
+    "start": "npm run build:client && tsx src/server.ts"
+  },
+  "dependencies": {
+    "serialport": "^13.0.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

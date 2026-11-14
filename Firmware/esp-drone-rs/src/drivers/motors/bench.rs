@@ -13,14 +13,14 @@ use super::Motors;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[allow(dead_code)]
 pub enum BenchMode {
-    /// MOSFET indicator LEDs only; safe without propellers.
+    /// GPIO indicator LEDs only; safe without propellers.
     Led,
     /// Spins 8520 motors one at a time; props attached, frame secured.
     Spin,
 }
 
 // ---------------------------------------------------------------------------
-// LED bench test — no props; ~30 % duty lights the MOSFET indicator LEDs.
+// LED bench test — no props; ~30 % duty lights the GPIO indicator LEDs.
 // ---------------------------------------------------------------------------
 const LED_TEST_DUTY_NUMERATOR: u32 = 3;
 const LED_TEST_DUTY_DENOMINATOR: u32 = 10;
