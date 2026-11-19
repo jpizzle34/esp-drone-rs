@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>90 mm X frame</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1c1915;
+      --muted: #6f685e;
+      --paper: #f7f4ee;
+      --card: #fffcf7;
+      --line: #1c1915;
+      --guide: #8a8478;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 16px/1.45 ui-sans-serif, system-ui, sans-serif;
+    }
+    .note { color: var(--muted); }
+    .viewer {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--paper);
+      user-select: none;
+    }
+    .viewer canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: var(--paper);
+      touch-action: none;
+      cursor: default;
+    }
+    .viewer canvas.is-drag { cursor: grabbing; }
+    .viewer canvas.can-drag { cursor: grab; }
+    .rail {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      bottom: 16px;
+      z-index: 2;
+      width: min(560px, calc(100% - 32px));
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      pointer-events: none;
+    }
+    .legend {
+      flex: 0 0 auto;
+      width: 100%;
+      padding: 10px 10px 12px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      pointer-events: auto;
+    }
+    .legend .title {
+      margin: 2px 8px 0;
+      font-size: 15px;
+      font-weight: 500;
+    }
+    .legend .sub {
+      margin: 2px 8px 8px;
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--muted);
+    }
+    .legend button {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 6px 8px;
+      font: inherit;
+      font-size: 14px;
+      text-align: left;
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    .legend .detail {
+      display: block;
+      margin-top: 2px;
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--muted);
+    }
+    .legend button.is-hot,
+    .legend button:hover {
+      border-color: var(--ink);
+    }
+    .legend button:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 1px;
+    }
+    .legend .explode {
+      margin-top: 8px;
+      border-color: var(--ink);
+      text-align: center;
+    }
+    .legend .explode[aria-pressed="true"] {
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .legend .note {
+      margin: 8px 0 0;
+      font-size: 13px;
+    }
+    .plan {
+      flex: 1 1 auto;
+      min-height: 0;
+      width: 100%;
+      margin: 0;
+      padding: 8px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      pointer-events: auto;
+    }
+    .plan svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+    .tip {
+      position: absolute;
+      z-index: 3;
+      max-width: 220px;
+      padding: 6px 8px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      pointer-events: none;
+      font-size: 14px;
+    }
+    .tip[hidden] { display: none; }
+    .tip strong { font-weight: 500; }
+    .tip .detail { margin-top: 2px; }
+    #frame-view-error {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <section class="viewer" id="viewer">
+    <canvas id="frame-view" width="1280" height="800" aria-label="3D model of the 90 millimeter X frame. Nose points forward. M1 is front-right, M2 back-right, M3 back-left, M4 front-left."></canvas>
+    <div class="rail">
+    <aside class="legend" id="frame-legend">
+      <p class="title">90 mm X frame</p>
+      <p class="sub">8520 motors, 55 mm props. One piece, print deck-down.</p>
+      <button type="button" data-part="1">Frame<span class="detail">90 mm shaft to shaft. Arms 8 mm wide, 2.4 mm thick, 8 mm fillet into the deck. Deck 40 mm diameter, 1.6 mm. Boss 13 mm diameter, 8 mm tall, 9.0 mm bore. One zip tie through a pair of vertical slots.</span></button>
+      <button type="button" data-part="2">M1 front-right<span class="detail">8520, clockwise. 55 mm blade, 8.5 × 20 mm can.</span></button>
+      <button type="button" data-part="3">M2 back-right<span class="detail">8520, counterclockwise. 55 mm blade, 8.5 × 20 mm can.</span></button>
+      <button type="button" data-part="4">M3 back-left<span class="detail">8520, clockwise. 55 mm blade, 8.5 × 20 mm can.</span></button>
+      <button type="button" data-part="5">M4 front-left<span class="detail">8520, counterclockwise. 55 mm blade, 8.5 × 20 mm can.</span></button>
+      <button type="button" data-part="6">PCB<span class="detail">36 × 36 × 1.0 mm. M2 screws on a 30 mm square, 5 mm standoffs. Mount the IMU at the center, in the orientation already verified.</span></button>
+      <button type="button" data-part="7">Battery<span class="detail">1S, up to about 55 × 22 × 8 mm, strapped under the deck. The pack is the landing gear.</span></button>
+      <button type="button" class="explode" id="frame-explode" aria-pressed="false" aria-controls="frame-view">Explode</button>
+      <p class="note">Viewed from above. Positive yaw turns the nose right.</p>
+      <p class="note">Print in PETG, 0.2 mm layers, 0.4 mm nozzle, four walls, deck on the bed, no supports.</p>
+      <p class="note">Ctrl-drag rotates. Scroll zooms. Space-drag pans.</p>
+    </aside>
+    <figure class="plan">
+      <svg viewBox="0 0 800 820" role="img" aria-label="Top view of the 90 millimeter X frame, nose up. Front-left and back-right spin counterclockwise. Front-right and back-left spin clockwise.">
+        <g fill="none" stroke-linecap="round">
+          <circle cx="501.8" cy="328.2" r="88" stroke="var(--guide)" stroke-dasharray="5 6"/>
+          <circle cx="298.2" cy="328.2" r="88" stroke="var(--guide)" stroke-dasharray="5 6"/>
+          <circle cx="298.2" cy="531.8" r="88" stroke="var(--guide)" stroke-dasharray="5 6"/>
+          <circle cx="501.8" cy="531.8" r="88" stroke="var(--guide)" stroke-dasharray="5 6"/>
+
+          <line x1="438.5" y1="391.5" x2="487.1" y2="342.9" stroke="var(--line)" stroke-width="25.6"/>
+          <line x1="361.5" y1="391.5" x2="312.9" y2="342.9" stroke="var(--line)" stroke-width="25.6"/>
+          <line x1="361.5" y1="468.5" x2="312.9" y2="517.1" stroke="var(--line)" stroke-width="25.6"/>
+          <line x1="438.5" y1="468.5" x2="487.1" y2="517.1" stroke="var(--line)" stroke-width="25.6"/>
+        </g>
+
+        <circle cx="400" cy="430" r="64" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>
+        <rect x="342.4" y="372.4" width="115.2" height="115.2" rx="6" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5"/>
+        <g fill="none" stroke="var(--line)" stroke-width="1.5">
+          <circle cx="352" cy="382" r="5"/>
+          <circle cx="448" cy="382" r="5"/>
+          <circle cx="352" cy="478" r="5"/>
+          <circle cx="448" cy="478" r="5"/>
+        </g>
+
+        <g fill="var(--card)" stroke="var(--line)" stroke-width="1.5">
+          <circle cx="501.8" cy="328.2" r="20.8"/>
+          <circle cx="298.2" cy="328.2" r="20.8"/>
+          <circle cx="298.2" cy="531.8" r="20.8"/>
+          <circle cx="501.8" cy="531.8" r="20.8"/>
+        </g>
+        <g fill="none" stroke="var(--line)" stroke-width="1.25">
+          <circle cx="501.8" cy="328.2" r="14.4"/>
+          <circle cx="298.2" cy="328.2" r="14.4"/>
+          <circle cx="298.2" cy="531.8" r="14.4"/>
+          <circle cx="501.8" cy="531.8" r="14.4"/>
+        </g>
+
+        <g fill="var(--ink)" font-family="ui-sans-serif, system-ui, sans-serif" font-size="32" text-anchor="middle">
+          <text x="400" y="158">nose</text>
+          <text x="648" y="196">M1 CW</text>
+          <text x="152" y="196">M4 CCW</text>
+          <text x="152" y="684">M3 CW</text>
+          <text x="648" y="684">M2 CCW</text>
+          <text x="400" y="438">PCB</text>
+          <text x="668" y="310" text-anchor="start">55 mm</text>
+        </g>
+        <polygon points="400,176 394,188 406,188" fill="var(--ink)"/>
+      </svg>
+    </figure>
+    </div>
+    <div class="tip" id="frame-tip" hidden>
+      <strong></strong>
+      <span class="detail"></span>
+    </div>
+    <p class="note" id="frame-view-error" hidden>This browser cannot show the 3D model.</p>
+  </section>
+  <script>
+  (function () {
+    // Millimetres. Nose is +Y, up is +Z. Opposite shafts are 90 mm apart.
+    var canvas = document.getElementById('frame-view');
+    var legend = document.getElementById('frame-legend');
+    var explodeBtn = document.getElementById('frame-explode');
+    var errorEl = document.getElementById('frame-view-error');
+    var gl = canvas.getContext('webgl', { antialias: true, alpha: false, depth: true, stencil: false });
+    if (!gl) {
+      errorEl.hidden = false;
+      return;
+    }
+
+    var MOTOR = 45 / Math.sqrt(2);
+    var motors = [
+      { name: 'M1', x: MOTOR, y: MOTOR },
+      { name: 'M2', x: MOTOR, y: -MOTOR },
+      { name: 'M3', x: -MOTOR, y: -MOTOR },
+      { name: 'M4', x: -MOTOR, y: MOTOR }
+    ];
+
+    function mesh() { return { pos: [], nor: [], idx: [] }; }
+    function hypot3(x, y, z) { return Math.sqrt(x * x + y * y + z * z) || 1; }
+    function pushVert(m, p, n) {
+      m.pos.push(p[0], p[1], p[2]);
+      m.nor.push(n[0], n[1], n[2]);
+    }
+    function addTri(m, p0, p1, p2, n) {
+      var b = m.pos.length / 3;
+      pushVert(m, p0, n); pushVert(m, p1, n); pushVert(m, p2, n);
+      m.idx.push(b, b + 1, b + 2);
+    }
+    function addQuad(m, p0, p1, p2, p3) {
+      var ax = p1[0] - p0[0], ay = p1[1] - p0[1], az = p1[2] - p0[2];
+      var bx = p2[0] - p0[0], by = p2[1] - p0[1], bz = p2[2] - p0[2];
+      var nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx;
+      var L = hypot3(nx, ny, nz);
+      var n = [nx / L, ny / L, nz / L];
+      var b = m.pos.length / 3;
+      pushVert(m, p0, n); pushVert(m, p1, n); pushVert(m, p2, n); pushVert(m, p3, n);
+      m.idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+    }
+    function addSmoothQuad(m, p0, p1, p2, p3, n0, n1, n2, n3) {
+      var b = m.pos.length / 3;
+      pushVert(m, p0, n0); pushVert(m, p1, n1); pushVert(m, p2, n2); pushVert(m, p3, n3);
+      m.idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+    }
+    function addBox(m, x0, y0, z0, x1, y1, z1, skip) {
+      skip = skip || {};
+      if (!skip.pz) addQuad(m, [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]);
+      if (!skip.nz) addQuad(m, [x0, y0, z0], [x0, y1, z0], [x1, y1, z0], [x1, y0, z0]);
+      if (!skip.px) addQuad(m, [x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]);
+      if (!skip.nx) addQuad(m, [x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0]);
+      if (!skip.py) addQuad(m, [x0, y1, z0], [x0, y1, z1], [x1, y1, z1], [x1, y1, z0]);
+      if (!skip.ny) addQuad(m, [x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]);
+    }
+    function addCylinder(m, ox, oy, z0, z1, r, n, caps) {
+      var i, a0, a1, c0, s0, c1, s1;
+      for (i = 0; i < n; i++) {
+        a0 = (i / n) * Math.PI * 2;
+        a1 = ((i + 1) / n) * Math.PI * 2;
+        c0 = Math.cos(a0); s0 = Math.sin(a0);
+        c1 = Math.cos(a1); s1 = Math.sin(a1);
+        addSmoothQuad(m,
+          [ox + r * c0, oy + r * s0, z0],
+          [ox + r * c1, oy + r * s1, z0],
+          [ox + r * c1, oy + r * s1, z1],
+          [ox + r * c0, oy + r * s0, z1],
+          [c0, s0, 0], [c1, s1, 0], [c1, s1, 0], [c0, s0, 0]);
+        if (caps) {
+          addTri(m, [ox, oy, z1], [ox + r * c0, oy + r * s0, z1], [ox + r * c1, oy + r * s1, z1], [0, 0, 1]);
+          addTri(m, [ox, oy, z0], [ox + r * c1, oy + r * s1, z0], [ox + r * c0, oy + r * s0, z0], [0, 0, -1]);
+        }
+      }
+    }
+    function addTube(m, ox, oy, z0, z1, rOut, rIn, n) {
+      var i, a0, a1, c0, s0, c1, s1;
+      for (i = 0; i < n; i++) {
+        a0 = (i / n) * Math.PI * 2;
+        a1 = ((i + 1) / n) * Math.PI * 2;
+        c0 = Math.cos(a0); s0 = Math.sin(a0);
+        c1 = Math.cos(a1); s1 = Math.sin(a1);
+        addSmoothQuad(m,
+          [ox + rOut * c0, oy + rOut * s0, z0],
+          [ox + rOut * c1, oy + rOut * s1, z0],
+          [ox + rOut * c1, oy + rOut * s1, z1],
+          [ox + rOut * c0, oy + rOut * s0, z1],
+          [c0, s0, 0], [c1, s1, 0], [c1, s1, 0], [c0, s0, 0]);
+        addSmoothQuad(m,
+          [ox + rIn * c0, oy + rIn * s0, z0],
+          [ox + rIn * c0, oy + rIn * s0, z1],
+          [ox + rIn * c1, oy + rIn * s1, z1],
+          [ox + rIn * c1, oy + rIn * s1, z0],
+          [-c0, -s0, 0], [-c0, -s0, 0], [-c1, -s1, 0], [-c1, -s1, 0]);
+        addQuad(m,
+          [ox + rOut * c0, oy + rOut * s0, z1],
+          [ox + rOut * c1, oy + rOut * s1, z1],
+          [ox + rIn * c1, oy + rIn * s1, z1],
+          [ox + rIn * c0, oy + rIn * s0, z1]);
+        addQuad(m,
+          [ox + rOut * c0, oy + rOut * s0, z0],
+          [ox + rIn * c0, oy + rIn * s0, z0],
+          [ox + rIn * c1, oy + rIn * s1, z0],
+          [ox + rOut * c1, oy + rOut * s1, z0]);
+      }
+    }
+    function addAnnulus(m, ox, oy, z0, z1, rOut, rIn, n) {
+      addTube(m, ox, oy, z0, z1, rOut, rIn, n);
+    }
+
+    function rotZMatrix(a) {
+      var c = Math.cos(a), s = Math.sin(a);
+      return [c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+    }
+    function appendTransformed(dst, src, m4) {
+      var base = dst.pos.length / 3;
+      var i, x, y, z, nx, ny, nz, L;
+      for (i = 0; i < src.pos.length; i += 3) {
+        x = src.pos[i]; y = src.pos[i + 1]; z = src.pos[i + 2];
+        dst.pos.push(
+          m4[0] * x + m4[4] * y + m4[8] * z + m4[12],
+          m4[1] * x + m4[5] * y + m4[9] * z + m4[13],
+          m4[2] * x + m4[6] * y + m4[10] * z + m4[14]
+        );
+        nx = m4[0] * src.nor[i] + m4[4] * src.nor[i + 1] + m4[8] * src.nor[i + 2];
+        ny = m4[1] * src.nor[i] + m4[5] * src.nor[i + 1] + m4[9] * src.nor[i + 2];
+        nz = m4[2] * src.nor[i] + m4[6] * src.nor[i + 1] + m4[10] * src.nor[i + 2];
+        L = hypot3(nx, ny, nz);
+        dst.nor.push(nx / L, ny / L, nz / L);
+      }
+      for (i = 0; i < src.idx.length; i++) dst.idx.push(src.idx[i] + base);
+    }
+
+    function dedup(pts) {
+      var out = [];
+      var i, p, q;
+      for (i = 0; i < pts.length; i++) {
+        p = pts[i];
+        q = out.length ? out[out.length - 1] : null;
+        if (!q || Math.hypot(p[0] - q[0], p[1] - q[1]) > 0.04) out.push(p);
+      }
+      return out;
+    }
+
+    function sampleArc(center, a0, a1, n, radius) {
+      var sweep = a1 - a0;
+      while (sweep > Math.PI) sweep -= Math.PI * 2;
+      while (sweep < -Math.PI) sweep += Math.PI * 2;
+      var pts = [];
+      var i, a;
+      for (i = 0; i <= n; i++) {
+        a = a0 + sweep * (i / n);
+        pts.push([center[0] + radius * Math.cos(a), center[1] + radius * Math.sin(a)]);
+      }
+      return pts;
+    }
+
+    function frameOutline() {
+      var R = 20, Rf = 8, hw = 4;
+      var cy = hw + Rf;
+      var cx = Math.sqrt((R + Rf) * (R + Rf) - cy * cy);
+      var tipR = hw;
+      var tipCx = 45 - tipR;
+      function side(sign) {
+        var center = [cx, sign * cy];
+        var circ = [cx * R / (R + Rf), sign * cy * R / (R + Rf)];
+        var line = [cx, sign * hw];
+        return {
+          center: center,
+          aCirc: Math.atan2(circ[1] - center[1], circ[0] - center[0]),
+          aLine: Math.atan2(line[1] - center[1], line[0] - center[0])
+        };
+      }
+      var upper = side(1);
+      var lower = side(-1);
+      var local = [];
+      local = local.concat(sampleArc(lower.center, lower.aCirc, lower.aLine, 9, Rf));
+      var nStraight = 7;
+      var i, t, a;
+      for (i = 1; i <= nStraight; i++) {
+        t = i / (nStraight + 1);
+        local.push([cx + (tipCx - cx) * t, -hw]);
+      }
+      local.push([tipCx, -hw]);
+      for (i = 1; i < 12; i++) {
+        a = -Math.PI / 2 + Math.PI * (i / 12);
+        local.push([tipCx + tipR * Math.cos(a), tipR * Math.sin(a)]);
+      }
+      local.push([tipCx, hw]);
+      for (i = nStraight; i >= 1; i--) {
+        t = i / (nStraight + 1);
+        local.push([cx + (tipCx - cx) * t, hw]);
+      }
+      local = local.concat(sampleArc(upper.center, upper.aLine, upper.aCirc, 9, Rf));
+      local = dedup(local);
+
+      var arms = [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4];
+      var endA = Math.atan2(local[local.length - 1][1], local[local.length - 1][0]);
+      var startA = Math.atan2(local[0][1], local[0][0]);
+      var world = [];
+      var k, ang, c, s, p, sweep, steps, j;
+      for (k = 0; k < arms.length; k++) {
+        ang = arms[k];
+        c = Math.cos(ang); s = Math.sin(ang);
+        for (i = 0; i < local.length; i++) {
+          p = local[i];
+          world.push([p[0] * c - p[1] * s, p[0] * s + p[1] * c]);
+        }
+        var next = arms[(k + 1) % arms.length];
+        var aFrom = ang + endA;
+        var aTo = next + startA;
+        sweep = aTo - aFrom;
+        while (sweep < 0) sweep += Math.PI * 2;
+        while (sweep > Math.PI * 2) sweep -= Math.PI * 2;
+        steps = 10;
+        for (j = 1; j < steps; j++) {
+          a = aFrom + sweep * (j / steps);
+          world.push([R * Math.cos(a), R * Math.sin(a)]);
+        }
+      }
+      return dedup(world);
+    }
+
+    function extrudeOutline(m, pts, z0, z1) {
+      var i, p, q, n = pts.length;
+      for (i = 0; i < n; i++) {
+        p = pts[i];
+        q = pts[(i + 1) % n];
+        addTri(m, [0, 0, z1], [p[0], p[1], z1], [q[0], q[1], z1], [0, 0, 1]);
+        addTri(m, [0, 0, z0], [q[0], q[1], z0], [p[0], p[1], z0], [0, 0, -1]);
+        addQuad(m,
+          [p[0], p[1], z0], [q[0], q[1], z0], [q[0], q[1], z1], [p[0], p[1], z1]);
+      }
+    }
+
+    function armHalfWidth(x) {
+      var hw = 4, Rf = 8, tipR = 4, tipCx = 41;
+      var cy = hw + Rf;
+      var cx = Math.sqrt(28 * 28 - cy * cy);
+      if (x >= tipCx) {
+        var dx = x - tipCx;
+        if (dx >= tipR) return 0;
+        return Math.sqrt(Math.max(0, tipR * tipR - dx * dx));
+      }
+      if (x >= cx) return hw;
+      var d = x - cx;
+      var under = Rf * Rf - d * d;
+      if (under <= 0) return hw;
+      return cy - Math.sqrt(under);
+    }
+
+    function buildRaisedArm() {
+      var m = mesh();
+      var sections = [];
+      var i, x, hw, lower, upper, loop, p, q, fan;
+      for (i = 0; i <= 18; i++) {
+        x = 20.2 + (44.6 - 20.2) * (i / 18);
+        hw = armHalfWidth(x) - 0.16;
+        if (hw < 0.4) break;
+        sections.push([x, hw]);
+      }
+      lower = sections.map(function (s) { return [s[0], -s[1]]; });
+      upper = sections.map(function (s) { return [s[0], s[1]]; }).reverse();
+      loop = lower.concat(upper);
+      fan = [32, 0];
+      for (i = 0; i < loop.length; i++) {
+        p = loop[i];
+        q = loop[(i + 1) % loop.length];
+        addTri(m, [fan[0], fan[1], 2.4], [p[0], p[1], 2.4], [q[0], q[1], 2.4], [0, 0, 1]);
+        addQuad(m, [p[0], p[1], 1.58], [q[0], q[1], 1.58], [q[0], q[1], 2.4], [p[0], p[1], 2.4]);
+      }
+      return m;
+    }
+
+    function buildFrame() {
+      var m = mesh();
+      extrudeOutline(m, frameOutline(), 0, 1.6);
+      var raised = buildRaisedArm();
+      var angles = [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4];
+      var boss = mesh();
+      // Boss sinks 0.08 mm into the arm top so the pad reads as sitting on the arm.
+      addTube(boss, 0, 0, 2.32, 10.4, 6.5, 4.5, 40);
+      var k;
+      for (k = 0; k < 4; k++) {
+        appendTransformed(m, raised, rotZMatrix(angles[k]));
+        appendTransformed(m, boss, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, motors[k].x, motors[k].y, 0, 1]);
+      }
+      return m;
+    }
+
+    function buildNose() {
+      var m = mesh();
+      var z0 = 1.66, z1 = 1.96;
+      var tip = [0, 21.6], a = [-2.5, 18.5], b = [2.5, 18.5];
+      addTri(m, [tip[0], tip[1], z1], [a[0], a[1], z1], [b[0], b[1], z1], [0, 0, 1]);
+      addTri(m, [tip[0], tip[1], z0], [b[0], b[1], z0], [a[0], a[1], z0], [0, 0, -1]);
+      addQuad(m, [tip[0], tip[1], z0], [a[0], a[1], z0], [a[0], a[1], z1], [tip[0], tip[1], z1]);
+      addQuad(m, [a[0], a[1], z0], [b[0], b[1], z0], [b[0], b[1], z1], [a[0], a[1], z1]);
+      addQuad(m, [b[0], b[1], z0], [tip[0], tip[1], z0], [tip[0], tip[1], z1], [b[0], b[1], z1]);
+      return m;
+    }
+
+    function buildMotorCan() {
+      var m = mesh();
+      addCylinder(m, 0, 0, 2.46, 22.46, 4.25, 36, true);
+      return m;
+    }
+    function buildShaft() {
+      var m = mesh();
+      addCylinder(m, 0, 0, 22.46, 27.46, 0.5, 16, true);
+      return m;
+    }
+    // Two pitched blades, 55 mm tip to tip. No disc.
+    function buildOneBlade() {
+      var m = mesh();
+      var strips = 16;
+      var around = 12;
+      var rRoot = 3.2;
+      var rTip = 27.5;
+      var zc = 26.15;
+      var prev = null;
+      var prevN = null;
+      var i, j, j2, t, r, chord, thick, twist, ct, st, a, ly, lz, ny, nz, nL, y, z, nY, nZ;
+      var ring, nrm, center;
+      for (i = 0; i <= strips; i++) {
+        t = i / strips;
+        r = rRoot + (rTip - rRoot) * t;
+        chord = 10.5 + (4.6 - 10.5) * t;
+        thick = 1.45 + (0.38 - 1.45) * t;
+        twist = (34 + (12 - 34) * t) * Math.PI / 180;
+        ct = Math.cos(twist);
+        st = Math.sin(twist);
+        ring = [];
+        nrm = [];
+        for (j = 0; j < around; j++) {
+          a = (j / around) * Math.PI * 2 - Math.PI / 2;
+          ly = Math.cos(a) * chord * 0.5;
+          lz = Math.sin(a) * thick * 0.5;
+          ny = Math.cos(a) / (chord * 0.5);
+          nz = Math.sin(a) / (thick * 0.5);
+          nL = Math.hypot(ny, nz) || 1;
+          ny /= nL;
+          nz /= nL;
+          y = ly * ct - lz * st;
+          z = ly * st + lz * ct;
+          nY = ny * ct - nz * st;
+          nZ = ny * st + nz * ct;
+          ring.push([r, y, zc + z]);
+          nrm.push([0, nY, nZ]);
+        }
+        if (prev) {
+          for (j = 0; j < around; j++) {
+            j2 = (j + 1) % around;
+            addSmoothQuad(m, prev[j], prev[j2], ring[j2], ring[j], prevN[j], prevN[j2], nrm[j2], nrm[j]);
+          }
+        }
+        if (i === 0 || i === strips) {
+          center = [r, 0, zc];
+          for (j = 0; j < around; j++) {
+            j2 = (j + 1) % around;
+            if (i === 0) addTri(m, center, ring[j2], ring[j], [-1, 0, 0]);
+            else addTri(m, center, ring[j], ring[j2], [1, 0, 0]);
+          }
+        }
+        prev = ring;
+        prevN = nrm;
+      }
+      return m;
+    }
+    function buildHub() {
+      var m = mesh();
+      addTube(m, 0, 0, 25.05, 27.25, 3.55, 0.62, 24);
+      return m;
+    }
+    function buildBlades() {
+      var one = buildOneBlade();
+      var m = mesh();
+      var id = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+      appendTransformed(m, one, id);
+      appendTransformed(m, one, rotZMatrix(Math.PI));
+      return m;
+    }
+    function buildBoard() {
+      var m = mesh();
+      addBox(m, -18, -18, 6.6, 18, 18, 7.6);
+      return m;
+    }
+    function buildImu() {
+      var m = mesh();
+      addBox(m, -2, -2, 7.6, 2, 2, 8.35);
+      return m;
+    }
+    function buildStandoffs() {
+      var m = mesh();
+      var pts = [[15, 15], [15, -15], [-15, -15], [-15, 15]];
+      var i;
+      for (i = 0; i < pts.length; i++) {
+        addCylinder(m, pts[i][0], pts[i][1], 1.58, 6.62, 1.75, 20, false);
+        addTri(m,
+          [pts[i][0], pts[i][1], 1.62],
+          [pts[i][0] + 1.75, pts[i][1], 1.62],
+          [pts[i][0] + 1.75 * Math.cos(Math.PI / 10), pts[i][1] + 1.75 * Math.sin(Math.PI / 10), 1.62],
+          [0, 0, -1]);
+      }
+      // A proper underside cap, just clear of the deck top.
+      var cap = mesh();
+      for (i = 0; i < pts.length; i++) addCylinder(cap, pts[i][0], pts[i][1], 1.62, 1.66, 1.75, 20, true);
+      appendTransformed(m, cap, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+      return m;
+    }
+    function buildScrews() {
+      var m = mesh();
+      var pts = [[15, 15], [15, -15], [-15, -15], [-15, 15]];
+      var i;
+      for (i = 0; i < pts.length; i++) addCylinder(m, pts[i][0], pts[i][1], 7.58, 8.25, 1.45, 18, true);
+      return m;
+    }
+    function buildBattery() {
+      var m = mesh();
+      addBox(m, -10, -25, -8.2, 10, 25, -0.2);
+      return m;
+    }
+    function buildStrap() {
+      var m = mesh();
+      addBox(m, -10.12, -4.2, -8.32, 10.12, 4.2, -0.28);
+      return m;
+    }
+
+    var COL = {
+      frame: [0.30, 0.28, 0.25],
+      nose: [0.16, 0.15, 0.13],
+      motor: [0.58, 0.56, 0.52],
+      shaft: [0.14, 0.13, 0.12],
+      prop: [0.22, 0.20, 0.18],
+      hub: [0.14, 0.13, 0.12],
+      blade: [0.34, 0.32, 0.28],
+      pcb: [0.15, 0.30, 0.25],
+      imu: [0.07, 0.07, 0.06],
+      stand: [0.54, 0.43, 0.26],
+      screw: [0.74, 0.68, 0.54],
+      pack: [0.15, 0.14, 0.13],
+      strap: [0.40, 0.20, 0.16]
+    };
+
+    var frameMesh = buildFrame();
+    var noseMesh = buildNose();
+    var canMesh = buildMotorCan();
+    var shaftMesh = buildShaft();
+    var hubMesh = buildHub();
+    var bladeMesh = buildBlades();
+    var boardMesh = buildBoard();
+    var imuMesh = buildImu();
+    var standMesh = buildStandoffs();
+    var screwMesh = buildScrews();
+    var packMesh = buildBattery();
+    var strapMesh = buildStrap();
+
+    function upload(m) {
+      var pb = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, pb);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(m.pos), gl.STATIC_DRAW);
+      var nb = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, nb);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(m.nor), gl.STATIC_DRAW);
+      var ib = gl.createBuffer();
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(m.idx), gl.STATIC_DRAW);
+      return { p: pb, n: nb, i: ib, count: m.idx.length };
+    }
+
+    var gpu = {
+      frame: upload(frameMesh),
+      nose: upload(noseMesh),
+      can: upload(canMesh),
+      shaft: upload(shaftMesh),
+      hub: upload(hubMesh),
+      blade: upload(bladeMesh),
+      board: upload(boardMesh),
+      imu: upload(imuMesh),
+      stand: upload(standMesh),
+      screw: upload(screwMesh),
+      pack: upload(packMesh),
+      strap: upload(strapMesh)
+    };
+
+    var vs = [
+      'attribute vec3 aPos;',
+      'attribute vec3 aNrm;',
+      'uniform mat4 uMvp;',
+      'uniform mat4 uModel;',
+      'uniform mat3 uN;',
+      'varying vec3 vN;',
+      'varying vec3 vW;',
+      'void main() {',
+      '  vec4 w = uModel * vec4(aPos, 1.0);',
+      '  vW = w.xyz;',
+      '  vN = uN * aNrm;',
+      '  gl_Position = uMvp * vec4(aPos, 1.0);',
+      '}'
+    ].join('\n');
+    var fs = [
+      'precision mediump float;',
+      'varying vec3 vN;',
+      'varying vec3 vW;',
+      'uniform vec3 uColor;',
+      'uniform vec3 uEye;',
+      'void main() {',
+      '  vec3 N = normalize(vN);',
+      '  vec3 V = normalize(uEye - vW);',
+      '  if (dot(N, V) < 0.0) N = -N;',
+      '  vec3 L1 = normalize(vec3(0.32, 0.48, 0.82));',
+      '  vec3 L2 = normalize(vec3(-0.62, -0.18, 0.42));',
+      '  float key = max(dot(N, L1), 0.0);',
+      '  float fill = max(dot(N, L2), 0.0);',
+      '  float hemi = N.z * 0.5 + 0.5;',
+      '  vec3 col = uColor * (0.44 + 0.64 * key + 0.20 * fill + 0.08 * hemi);',
+      '  float fres = pow(1.0 - max(dot(N, V), 0.0), 1.7);',
+      '  col *= mix(1.0, 0.70, fres);',
+      '  gl_FragColor = vec4(col, 1.0);',
+      '}'
+    ].join('\n');
+
+    function compile(type, src) {
+      var s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+        throw new Error(gl.getShaderInfoLog(s) || 'shader');
+      }
+      return s;
+    }
+    var prog;
+    try {
+      prog = gl.createProgram();
+      gl.attachShader(prog, compile(gl.VERTEX_SHADER, vs));
+      gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fs));
+      gl.bindAttribLocation(prog, 0, 'aPos');
+      gl.bindAttribLocation(prog, 1, 'aNrm');
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        throw new Error(gl.getProgramInfoLog(prog) || 'link');
+      }
+    } catch (err) {
+      errorEl.hidden = false;
+      errorEl.textContent = 'This browser cannot show the 3D model.';
+      return;
+    }
+    gl.useProgram(prog);
+    var loc = {
+      mvp: gl.getUniformLocation(prog, 'uMvp'),
+      model: gl.getUniformLocation(prog, 'uModel'),
+      n: gl.getUniformLocation(prog, 'uN'),
+      color: gl.getUniformLocation(prog, 'uColor'),
+      eye: gl.getUniformLocation(prog, 'uEye')
+    };
+
+    function mul(a, b) {
+      var o = new Array(16);
+      var c, r;
+      for (c = 0; c < 4; c++) {
+        for (r = 0; r < 4; r++) {
+          o[c * 4 + r] =
+            a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] +
+            a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+        }
+      }
+      return o;
+    }
+    function rigid(x, y, z, rot) {
+      var c = Math.cos(rot), s = Math.sin(rot);
+      return [c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, x, y, z, 1];
+    }
+    function normalOf(m) {
+      return [m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]];
+    }
+    function perspective(fov, aspect, near, far) {
+      var f = 1 / Math.tan(fov / 2);
+      var nf = 1 / (near - far);
+      return [
+        f / aspect, 0, 0, 0,
+        0, f, 0, 0,
+        0, 0, (far + near) * nf, -1,
+        0, 0, (2 * far * near) * nf, 0
+      ];
+    }
+    function sub3(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+    function cross3(a, b) {
+      return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    }
+    function norm3(a) {
+      var L = hypot3(a[0], a[1], a[2]);
+      return [a[0] / L, a[1] / L, a[2] / L];
+    }
+    function dot3(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+    function lookAt(eye, target, up) {
+      var z = norm3(sub3(eye, target));
+      var x = norm3(cross3(up, z));
+      var y = cross3(z, x);
+      return [
+        x[0], y[0], z[0], 0,
+        x[1], y[1], z[1], 0,
+        x[2], y[2], z[2], 0,
+        -dot3(x, eye), -dot3(y, eye), -dot3(z, eye), 1
+      ];
+    }
+
+    var yaw = 0.62;
+    var pitch = 0.58;
+    var distance = 390;
+    var target = [0, 0, 8];
+    var fov = 0.58;
+
+    function eyePosition() {
+      var cp = Math.cos(pitch), sp = Math.sin(pitch);
+      return [
+        target[0] + distance * cp * Math.sin(yaw),
+        target[1] + distance * cp * Math.cos(yaw),
+        target[2] + distance * sp
+      ];
+    }
+
+    var explodeFrom = 0, explodeTo = 0, explodeStart = 0;
+    function explodeNow(now) {
+      if (explodeFrom === explodeTo) return explodeTo;
+      var u = Math.min(1, (now - explodeStart) / 680);
+      var s = u * u * (3 - 2 * u);
+      return explodeFrom + (explodeTo - explodeFrom) * s;
+    }
+    var hoverPart = 0;
+    var legendButtons = legend.querySelectorAll('[data-part]');
+    var tip = document.getElementById('frame-tip');
+    var tipName = tip.querySelector('strong');
+    var tipDetail = tip.querySelector('.detail');
+    var viewerEl = document.getElementById('viewer');
+    function setHover(id) {
+      hoverPart = id || 0;
+      var n;
+      for (n = 0; n < legendButtons.length; n++) {
+        legendButtons[n].classList.toggle('is-hot', Number(legendButtons[n].getAttribute('data-part')) === hoverPart);
+      }
+      if (!hoverPart) tip.hidden = true;
+    }
+    function placeTip(id, clientX, clientY) {
+      var btn = legend.querySelector('[data-part="' + id + '"]');
+      var detail = btn && btn.querySelector('.detail');
+      if (!btn || !detail) {
+        tip.hidden = true;
+        return;
+      }
+      tipName.textContent = btn.childNodes[0].textContent.trim();
+      tipDetail.textContent = detail.textContent;
+      tip.hidden = false;
+      var bounds = viewerEl.getBoundingClientRect();
+      var x = clientX - bounds.left + 14;
+      var y = clientY - bounds.top + 16;
+      tip.style.left = x + 'px';
+      tip.style.top = y + 'px';
+      var tw = tip.offsetWidth;
+      var th = tip.offsetHeight;
+      if (x + tw > bounds.width - 8) tip.style.left = (clientX - bounds.left - tw - 12) + 'px';
+      if (y + th > bounds.height - 8) tip.style.top = (clientY - bounds.top - th - 12) + 'px';
+    }
+    legend.addEventListener('mouseover', function (ev) {
+      var btn = ev.target.closest('[data-part]');
+      if (!btn) return;
+      setHover(Number(btn.getAttribute('data-part')));
+    });
+    legend.addEventListener('mouseleave', function () { setHover(0); });
+
+    var outlineProg = gl.createProgram();
+    gl.attachShader(outlineProg, compile(gl.VERTEX_SHADER, [
+      'attribute vec2 aPos;',
+      'varying vec2 vUv;',
+      'void main() {',
+      '  vUv = aPos * 0.5 + 0.5;',
+      '  gl_Position = vec4(aPos, 0.0, 1.0);',
+      '}'
+    ].join('\n')));
+    gl.attachShader(outlineProg, compile(gl.FRAGMENT_SHADER, [
+      'precision mediump float;',
+      'varying vec2 vUv;',
+      'uniform sampler2D uMask;',
+      'uniform vec2 uTexel;',
+      'void main() {',
+      '  float center = texture2D(uMask, vUv).r;',
+      '  vec2 px = uTexel * 3.0;',
+      '  float around = texture2D(uMask, vUv + vec2(px.x, 0.0)).r;',
+      '  around = max(around, texture2D(uMask, vUv + vec2(-px.x, 0.0)).r);',
+      '  around = max(around, texture2D(uMask, vUv + vec2(0.0, px.y)).r);',
+      '  around = max(around, texture2D(uMask, vUv + vec2(0.0, -px.y)).r);',
+      '  around = max(around, texture2D(uMask, vUv + px).r);',
+      '  around = max(around, texture2D(uMask, vUv - px).r);',
+      '  around = max(around, texture2D(uMask, vUv + vec2(px.x, -px.y)).r);',
+      '  around = max(around, texture2D(uMask, vUv + vec2(-px.x, px.y)).r);',
+      '  float edge = clamp(around - center, 0.0, 1.0);',
+      '  if (edge < 0.2) discard;',
+      '  gl_FragColor = vec4(0.07, 0.06, 0.05, 1.0);',
+      '}'
+    ].join('\n')));
+    gl.bindAttribLocation(outlineProg, 0, 'aPos');
+    gl.linkProgram(outlineProg);
+    if (!gl.getProgramParameter(outlineProg, gl.LINK_STATUS)) {
+      errorEl.hidden = false;
+      errorEl.textContent = gl.getProgramInfoLog(outlineProg) || 'Outline shader failed to link.';
+    }
+    var outlineMask = gl.getUniformLocation(outlineProg, 'uMask');
+    var outlineTexel = gl.getUniformLocation(outlineProg, 'uTexel');
+    var quadBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+
+    var pickProg = gl.createProgram();
+    gl.attachShader(pickProg, compile(gl.VERTEX_SHADER, [
+      'attribute vec3 aPos;',
+      'uniform mat4 uMvp;',
+      'void main() { gl_Position = uMvp * vec4(aPos, 1.0); }'
+    ].join('\n')));
+    gl.attachShader(pickProg, compile(gl.FRAGMENT_SHADER, [
+      'precision mediump float;',
+      'uniform vec3 uId;',
+      'void main() { gl_FragColor = vec4(uId, 1.0); }'
+    ].join('\n')));
+    gl.bindAttribLocation(pickProg, 0, 'aPos');
+    gl.linkProgram(pickProg);
+    var pickMvp = gl.getUniformLocation(pickProg, 'uMvp');
+    var pickIdLoc = gl.getUniformLocation(pickProg, 'uId');
+    var pickFb = gl.createFramebuffer();
+    var pickTex = gl.createTexture();
+    var pickDepth = gl.createRenderbuffer();
+    var pickW = 0;
+    var pickH = 0;
+    function ensurePick(w, h) {
+      if (w === pickW && h === pickH) return;
+      pickW = w;
+      pickH = h;
+      gl.bindTexture(gl.TEXTURE_2D, pickTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.bindRenderbuffer(gl.RENDERBUFFER, pickDepth);
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, pickFb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, pickTex, 0);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, pickDepth);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+
+    function drawMesh(gpuMesh, model, color, vp) {
+      var mvp = mul(vp, model);
+      gl.uniformMatrix4fv(loc.mvp, false, mvp);
+      gl.uniformMatrix4fv(loc.model, false, model);
+      gl.uniformMatrix3fv(loc.n, false, normalOf(model));
+      gl.uniform3fv(loc.color, color);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gpuMesh.p);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gpuMesh.n);
+      gl.enableVertexAttribArray(1);
+      gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gpuMesh.i);
+      gl.drawElements(gl.TRIANGLES, gpuMesh.count, gl.UNSIGNED_SHORT, 0);
+    }
+
+    var idMat = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+    var lastList = null;
+    var lastVp = null;
+
+    function sceneParts(e) {
+      var list = [
+        [gpu.frame, idMat, COL.frame, 1],
+        [gpu.nose, idMat, COL.nose, 1]
+      ];
+      var i, motor, place, model, part;
+      for (i = 0; i < motors.length; i++) {
+        motor = motors[i];
+        part = i + 2;
+        place = rigid(motor.x, motor.y, 26 * e, 0);
+        model = rigid(motor.x, motor.y, 54 * e, Math.atan2(motor.y, motor.x));
+        list.push([gpu.can, place, COL.motor, part]);
+        list.push([gpu.shaft, place, COL.shaft, part]);
+        list.push([gpu.hub, model, COL.hub, part]);
+        list.push([gpu.blade, model, COL.blade, part]);
+      }
+      var boardLift = rigid(0, 0, 36 * e, 0);
+      list.push([gpu.stand, boardLift, COL.stand, 6]);
+      list.push([gpu.board, boardLift, COL.pcb, 6]);
+      list.push([gpu.imu, boardLift, COL.imu, 6]);
+      list.push([gpu.screw, boardLift, COL.screw, 6]);
+      var packDrop = rigid(0, 0, -28 * e, 0);
+      list.push([gpu.pack, packDrop, COL.pack, 7]);
+      list.push([gpu.strap, packDrop, COL.strap, 7]);
+      return list;
+    }
+
+    function bindMesh(gpuMesh) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, gpuMesh.p);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gpuMesh.n);
+      gl.enableVertexAttribArray(1);
+      gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gpuMesh.i);
+    }
+
+    function project(vp, p, w, h) {
+      var x = vp[0] * p[0] + vp[4] * p[1] + vp[8] * p[2] + vp[12];
+      var y = vp[1] * p[0] + vp[5] * p[1] + vp[9] * p[2] + vp[13];
+      var wdiv = vp[3] * p[0] + vp[7] * p[1] + vp[11] * p[2] + vp[15];
+      if (wdiv <= 0.05) return null;
+      var nx = x / wdiv, ny = y / wdiv;
+      if (nx < -1.15 || nx > 1.15 || ny < -1.15 || ny > 1.15) return null;
+      return [(nx * 0.5 + 0.5) * w, (-ny * 0.5 + 0.5) * h];
+    }
+
+    function resize() {
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var w = Math.max(1, canvas.clientWidth);
+      var h = Math.max(1, canvas.clientHeight);
+      var pw = Math.round(w * dpr);
+      var ph = Math.round(h * dpr);
+      if (canvas.width !== pw || canvas.height !== ph) {
+        canvas.width = pw;
+        canvas.height = ph;
+      }
+    }
+
+    function render(now) {
+      resize();
+      var e = explodeNow(now);
+      var eye = eyePosition();
+      var aspect = canvas.width / Math.max(1, canvas.height);
+      var near = Math.max(1, distance * 0.08);
+      var far = distance * 8;
+      var proj = perspective(fov, aspect, near, far);
+      var view = lookAt(eye, target, [0, 0, 1]);
+      var vp = mul(proj, view);
+
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(247 / 255, 244 / 255, 238 / 255, 1);
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LEQUAL);
+      gl.disable(gl.CULL_FACE);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.uniform3fv(loc.eye, eye);
+
+      var list = sceneParts(e);
+      var i, item;
+      for (i = 0; i < list.length; i++) {
+        item = list[i];
+        drawMesh(item[0], item[1], item[2], vp);
+      }
+      if (hoverPart) {
+        ensurePick(canvas.width, canvas.height);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, pickFb);
+        gl.viewport(0, 0, pickW, pickH);
+        gl.clearColor(0, 0, 0, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
+        gl.disable(gl.CULL_FACE);
+        gl.useProgram(pickProg);
+        for (i = 0; i < list.length; i++) {
+          item = list[i];
+          if (item[3] !== hoverPart) continue;
+          gl.uniformMatrix4fv(pickMvp, false, mul(vp, item[1]));
+          gl.uniform3f(pickIdLoc, 1, 0, 0);
+          bindMesh(item[0]);
+          gl.disableVertexAttribArray(1);
+          gl.drawElements(gl.TRIANGLES, item[0].count, gl.UNSIGNED_SHORT, 0);
+        }
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.disable(gl.DEPTH_TEST);
+        gl.useProgram(outlineProg);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, pickTex);
+        gl.uniform1i(outlineMask, 0);
+        gl.uniform2f(outlineTexel, 1 / canvas.width, 1 / canvas.height);
+        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+        gl.enableVertexAttribArray(0);
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+        gl.enable(gl.DEPTH_TEST);
+        gl.useProgram(prog);
+      }
+      lastList = list;
+      lastVp = vp;
+      requestAnimationFrame(render);
+    }
+
+    explodeBtn.addEventListener('click', function () {
+      var now = performance.now();
+      explodeFrom = explodeNow(now);
+      explodeTo = explodeTo > 0.5 ? 0 : 1;
+      explodeStart = now;
+      var open = explodeTo > 0.5;
+      explodeBtn.setAttribute('aria-pressed', open ? 'true' : 'false');
+    });
+
+    var pointerOver = false;
+    var spaceDown = false;
+    var ctrlDown = false;
+    var mode = null;
+    var lastX = 0, lastY = 0;
+    var buttons = 0;
+
+    function refreshCursor() {
+      canvas.classList.toggle('is-drag', mode !== null);
+      canvas.classList.toggle('can-drag', mode === null && (spaceDown || ctrlDown));
+    }
+
+    canvas.addEventListener('pointerenter', function () { pointerOver = true; });
+    canvas.addEventListener('pointerleave', function (ev) {
+      pointerOver = false;
+      if (mode === 'pan') mode = null;
+      if (!ev.relatedTarget || !legend.contains(ev.relatedTarget)) setHover(0);
+      refreshCursor();
+    });
+    canvas.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
+
+    canvas.addEventListener('pointerdown', function (ev) {
+      if (ev.button !== 0) return;
+      buttons = ev.buttons;
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      if (ev.ctrlKey || ctrlDown) mode = 'orbit';
+      else if (spaceDown) mode = 'pan';
+      else return;
+      tip.hidden = true;
+      if (document.activeElement === explodeBtn) explodeBtn.blur();
+      canvas.setPointerCapture(ev.pointerId);
+      ev.preventDefault();
+      refreshCursor();
+    });
+    canvas.addEventListener('pointermove', function (ev) {
+      buttons = ev.buttons;
+      var dx = ev.clientX - lastX;
+      var dy = ev.clientY - lastY;
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      if (mode === 'orbit') {
+        if (!ev.ctrlKey && !ctrlDown) { mode = null; refreshCursor(); return; }
+        yaw -= dx * 0.008;
+        pitch += dy * 0.008;
+        pitch = Math.max(-1.05, Math.min(1.25, pitch));
+      } else if (mode === 'pan') {
+        if (!spaceDown) { mode = null; refreshCursor(); return; }
+        var eye = eyePosition();
+        var view = lookAt(eye, target, [0, 0, 1]);
+        var right = [view[0], view[4], view[8]];
+        var up = [view[1], view[5], view[9]];
+        var scale = distance * Math.tan(fov / 2) * 2 / Math.max(1, canvas.clientHeight);
+        target[0] += (-dx * right[0] - dy * up[0]) * scale;
+        target[1] += (-dx * right[1] - dy * up[1]) * scale;
+        target[2] += (-dx * right[2] - dy * up[2]) * scale;
+      } else if (lastList && lastVp) {
+        ensurePick(canvas.width, canvas.height);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, pickFb);
+        gl.viewport(0, 0, pickW, pickH);
+        gl.clearColor(0, 0, 0, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
+        gl.disable(gl.CULL_FACE);
+        gl.useProgram(pickProg);
+        var pi, partMesh;
+        for (pi = 0; pi < lastList.length; pi++) {
+          partMesh = lastList[pi];
+          gl.uniformMatrix4fv(pickMvp, false, mul(lastVp, partMesh[1]));
+          gl.uniform3f(pickIdLoc, partMesh[3] / 255, 0, 0);
+          bindMesh(partMesh[0]);
+          gl.drawElements(gl.TRIANGLES, partMesh[0].count, gl.UNSIGNED_SHORT, 0);
+        }
+        var rect = canvas.getBoundingClientRect();
+        var px = Math.floor((ev.clientX - rect.left) * (canvas.width / rect.width));
+        var py = Math.floor(canvas.height - (ev.clientY - rect.top) * (canvas.height / rect.height));
+        var sample = new Uint8Array(4);
+        if (px >= 0 && py >= 0 && px < canvas.width && py < canvas.height) {
+          gl.readPixels(px, py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, sample);
+          setHover(sample[0]);
+          if (sample[0]) placeTip(sample[0], ev.clientX, ev.clientY);
+        }
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.useProgram(prog);
+        gl.viewport(0, 0, canvas.width, canvas.height);
+      }
+    });
+    function endPointer(ev) {
+      buttons = ev.buttons || 0;
+      if (mode) {
+        mode = null;
+        refreshCursor();
+      }
+    }
+    canvas.addEventListener('pointerup', endPointer);
+    canvas.addEventListener('pointercancel', endPointer);
+
+    canvas.addEventListener('wheel', function (ev) {
+      ev.preventDefault();
+      var dy = ev.deltaY;
+      if (ev.deltaMode === 1) dy *= 16;
+      else if (ev.deltaMode === 2) dy *= 400;
+      distance *= Math.exp(dy * 0.0014);
+      distance = Math.max(110, Math.min(1600, distance));
+    }, { passive: false });
+
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Control') ctrlDown = true;
+      if (ev.code === 'Space') {
+        if (pointerOver) ev.preventDefault();
+        if (!spaceDown && pointerOver && (buttons & 1) && mode === null) {
+          mode = 'pan';
+        }
+        spaceDown = true;
+      }
+      refreshCursor();
+    }, true);
+    document.addEventListener('keyup', function (ev) {
+      if (ev.key === 'Control') {
+        ctrlDown = false;
+        if (mode === 'orbit') mode = null;
+      }
+      if (ev.code === 'Space') {
+        spaceDown = false;
+        if (mode === 'pan') mode = null;
+      }
+      refreshCursor();
+    }, true);
+    window.addEventListener('blur', function () {
+      spaceDown = false;
+      ctrlDown = false;
+      mode = null;
+      refreshCursor();
+    });
+
+    requestAnimationFrame(render);
+  })();
+  </script>
+</body>
+</html>

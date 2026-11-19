@@ -11,6 +11,7 @@ Pinout and wiring for the Rust firmware (`Firmware/esp-drone-rs/`).
 | [poc-left-header-wiring.md](./poc-left-header-wiring.md) | **Active POC** — all signals on the left header |
 | [wokwi-simulation.md](./wokwi-simulation.md) | **Wokwi** — simulate motors + MPU-6050 in VS Code |
 | [motor-led-flash-test.md](./motor-led-flash-test.md) | **Optional** — LED GPIO checks and sequential bench tests |
+| [frame-90mm.html](./frame-90mm.html) | **90 mm X frame** — top view, interactive 3D model, and print dimensions for the 8520 / 55 mm build |
 | [IMU live dashboard](../../tools/imu-dashboard/README.md) | Browser graphs for the serial IMU stream (`tools/imu-dashboard`) |
 
 ## Build and flash
